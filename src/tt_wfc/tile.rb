@@ -24,6 +24,20 @@ module Examples
 
       end # class
 
+      class ConnectionPoint
+        attr_reader :tile, :connection_id, :position, :relationships
+        # @param [Tile] tile
+        # @param [Symbol] connection_id
+        # @param [Geom::Point3d] position
+        # @param [RelationShips] relationships
+        def initialize(tile, connection_id, position, relationships)
+          @tile = tile
+          @connection_id = connection_id
+          @position = position
+          @relationships = relationships
+        end
+      end
+
       CONNECTION_IDS = [
         :north, :south, :east, :west
       ]
@@ -36,8 +50,9 @@ module Examples
         @connections = load_connections(instance)
       end
 
-      # @param [Sketchup::ComponentInstance] instance
       # @param [Symbol] connection_id
+      # @param [Sketchup::ComponentInstance] other_instance
+      # @param [Symbol] other_connection_id
       def connect(connection_id, other_instance, other_connection_id)
         connect_to(connection_id, other_instance, other_connection_id)
 
@@ -52,10 +67,20 @@ module Examples
         }
       end
 
+      # @return [Array<Tile::ConnectionPoint>]
+      def connections
+        CONNECTION_IDS.map { |connection_id|
+          pt = connection_position(@instance, connection_id)
+          relationships = @connections[connection_id]
+          ConnectionPoint.new(self, connection_id, pt, relationships)
+        }
+      end
+
       private
 
-      # @param [Sketchup::ComponentInstance] instance
       # @param [Symbol] connection_id
+      # @param [Sketchup::ComponentInstance] other_instance
+      # @param [Symbol] other_connection_id
       def connect_to(connection_id, other_instance, other_connection_id)
         check_connection_id(connection_id)
         check_connection_id(other_connection_id)
