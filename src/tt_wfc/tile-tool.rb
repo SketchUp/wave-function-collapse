@@ -75,6 +75,10 @@ module Examples
       # @param [Integer] y
       # @param [Sketchup::View] view
       def onLButtonUp(flags, x, y, view)
+        if @selected && @mouse_over && @selected.tile != @mouse_over.tile
+          puts "Connected #{@selected} to #{@mouse_over}"
+        end
+
         @mouse_left_button_down = nil
         @mouse_drag = false
         view.invalidate

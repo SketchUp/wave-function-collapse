@@ -25,7 +25,9 @@ module Examples
       end # class
 
       class ConnectionPoint
+
         attr_reader :tile, :connection_id, :position, :relationships
+
         # @param [Tile] tile
         # @param [Symbol] connection_id
         # @param [Geom::Point3d] position
@@ -36,6 +38,11 @@ module Examples
           @position = position
           @relationships = relationships
         end
+
+        def to_s
+          "#{@tile}:#{@connection_id}"
+        end
+
       end
 
       CONNECTION_IDS = [
@@ -74,6 +81,10 @@ module Examples
           relationships = @connections[connection_id]
           ConnectionPoint.new(self, connection_id, pt, relationships)
         }
+      end
+
+      def to_s
+        "Tile(#{object_id})"
       end
 
       private
