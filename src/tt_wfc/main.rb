@@ -1,5 +1,7 @@
 require 'sketchup.rb'
 
+require 'tt_wfc/tile-tool'
+
 module Examples
   module WFC
 
@@ -32,8 +34,20 @@ module Examples
       model.commit_operation
     end
 
+    def self.activate_tile_tool
+      model = Sketchup.active_model
+      return if model.nil?
+
+      tool = TileTool.new
+      model.select_tool(tool)
+    end
+
     unless file_loaded?(__FILE__)
-      menu = UI.menu('Plugins')
+      menu = UI.menu('Plugins').add_submenu('Wave Function Collapse')
+      menu.add_item('Tile Tool') {
+        self.activate_tile_tool
+      }
+      menu.add_separator
       menu.add_item('Load Assets') {
         self.prompt_load_assets
       }
