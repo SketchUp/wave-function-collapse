@@ -13,8 +13,8 @@ module Examples
       def initialize
         @tiles = load_tiles
 
-        # @type [Tile::ConnectionPoint, nil]
-        @selected = nil
+        # @type [Set<Tile::ConnectionPoint>]
+        @selection = Set.new
 
         # @type [Tile::ConnectionPoint, nil]
         @mouse_over = nil
@@ -53,10 +53,6 @@ module Examples
       # @param [Sketchup::View] view
       def onMouseMove(flags, x, y, view)
         @mouse_position = Geom::Point3d.new(x, y)
-        # if @selected && @mouse_left_button_down && !@mouse_drag
-        #   @mouse_drag = @mouse_left_button_down.distance(@mouse_position) >= DRAG_THRESHOLD
-        # end
-
         @mouse_over = pick_connection(view, x, y)
         view.invalidate
       end
@@ -69,7 +65,7 @@ module Examples
         @mouse_left_button_down = Geom::Point3d.new(x, y)
         @mouse_drag = false
 
-        @selected = pick_connection(view, x, y)
+        select_connection(flags, x, y, view)
         view.invalidate
       end
 
@@ -78,10 +74,6 @@ module Examples
       # @param [Integer] y
       # @param [Sketchup::View] view
       def onLButtonUp(flags, x, y, view)
-        # if @selected && @mouse_over && @selected.tile != @mouse_over.tile
-        #   puts "Connected #{@selected} to #{@mouse_over}"
-        # end
-
         @mouse_left_button_down = nil
         @mouse_drag = false
         view.invalidate
@@ -101,9 +93,10 @@ module Examples
         view.draw_points(points, 10, DRAW_PLUS, 'white')
 
         # Draw selected connection point.
-        if @selected
+        unless @selection.empty?
+          selected = @selection.map(&:position)
           view.line_width = 2
-          view.draw_points([@selected.position], 12, DRAW_OPEN_SQUARE, 'red')
+          view.draw_points(selected, 12, DRAW_OPEN_SQUARE, 'red')
         end
 
         # Draw moused over connection point.
@@ -123,6 +116,53 @@ module Examples
       end
 
       private
+
+      SELECT_SINGLE = 0
+      SELECT_ADD = 1
+      SELECT_REMOVE = 2
+      SELECT_TOGGLE = 3
+
+      # @param [Integer] flags
+      # @return [Integer]
+      def selection_state(flags)
+        if flags.allbits?(COPY_MODIFIER_MASK | CONSTRAIN_MODIFIER_MASK)
+          SELECT_REMOVE
+        elsif flags.allbits?(COPY_MODIFIER_MASK)
+          SELECT_ADD
+        elsif flags.allbits?(CONSTRAIN_MODIFIER_MASK)
+          SELECT_TOGGLE
+        else
+          SELECT_SINGLE
+        end
+      end
+
+      # @param [Integer] flags
+      # @param [Integer] x
+      # @param [Integer] y
+      # @param [Sketchup::View] view
+      def select_connection(flags, x, y, view)
+        picked = pick_connection(view, x, y)
+        selection_type = selection_state(flags)
+        @selection.clear if selection_type == SELECT_SINGLE
+        return if picked.nil?
+
+        case selection_type
+        when SELECT_SINGLE
+          @selection.clear
+          @selection.add(picked)
+        when SELECT_ADD
+          @selection.add(picked)
+        when SELECT_REMOVE
+          @selection.delete(picked)
+        when SELECT_TOGGLE
+          if @selection.include?(picked)
+            @selection.delete(picked)
+          else
+            @selection.add(picked)
+          end
+        end
+        nil
+      end
 
       APERTURE = 10 # pixels
 
