@@ -96,9 +96,9 @@ module Examples
         # menu.add_item('Remove Connection Type') do
         #   prompt_remove_connection_type
         # end
-        # menu.add_item('Edit Connection Type') do
-        #   prompt_edit_connection_type
-        # end
+        menu.add_item('Edit Connection Type') do
+          prompt_edit_connection_type
+        end
       end
 
       # @param [Sketchup::View] view
@@ -249,23 +249,71 @@ module Examples
         model.set_attribute(ATTR_DICT, ATTR_TYPES, types.map(&:to_a))
       end
 
-      def prompt_add_connection_type
+      # @param [Sketchup::Model] model
+      # @param [ConnectionType] type
+      def edit_connection_type(model, existing_type_id, type)
+        raise unless type.is_a?(ConnectionType)
+        types = get_connection_types(model)
+        raise ArgumentError, "#{existing_type_id} doesn't exist" if types.none? { |t| t[0] == existing_type_id }
+        raise ArgumentError, "#{type[0]} already exist" if types.any? { |t| t[0] == type[0] }
+        i = types.index { |t| t[0] == existing_type_id }
+        types[i] = type
+        model.set_attribute(ATTR_DICT, ATTR_TYPES, types.map(&:to_a))
+      end
+
+      def prompt_connection_type(title, id: 'connection-id', color: Sketchup::Color.names.sample)
         prompts = ['Connection ID', 'Color']
-        defaults = ['connection-id', Sketchup::Color.names.sample]
+        defaults = [id, color]
         list = ['', Sketchup::Color.names.join('|')]
-        input = UI.inputbox(prompts, defaults, list, 'Create Connection Type')
+        UI.inputbox(prompts, defaults, list, title)
+      end
+
+      def prompt_add_connection_type
+        input = prompt_connection_type('Create Connection Type')
         return unless input
 
         type, color = input
 
         model = Sketchup.active_model
         model.start_operation('Add Connection Type', true)
-        # add_connection_type(model, [type, color])
         add_connection_type(model, ConnectionType.new(type, color))
         model.commit_operation
       end
 
-      def prompt_assign_connection_type_to_selection
+      def prompt_edit_connection_type
+        model = Sketchup.active_model
+        types = get_connection_types(model)
+
+        input = prompt_pick_connection_type('Select Connection Type')
+        return unless input
+
+        type_id = input[0]
+        type = types.find { |t| t.type_id == type_id }
+        color = type.color
+
+        input = prompt_connection_type('Edit Connection Type', id: type_id, color: color)
+        return unless input
+
+        type, color = input
+
+        model = Sketchup.active_model
+        model.start_operation('Add Connection Type', true)
+        edit_connection_type(model, type_id, ConnectionType.new(type, color))
+        rename_connection_ids(model, type_id, type)
+        model.commit_operation
+      end
+
+      def rename_connection_ids(model, old_type_id, new_type_id)
+        @tiles.each { |tile|
+          tile.connections.each { |connection|
+            next unless connection.type == old_type_id
+
+            connection.type = new_type_id
+          }
+        }
+      end
+
+      def prompt_pick_connection_type(title)
         model = Sketchup.active_model
         types = get_connection_types(model)
         type_ids = types.map(&:first)
@@ -273,7 +321,14 @@ module Examples
         prompts = ['Connection ID']
         defaults = [type_ids.sort.first || '']
         list = [type_ids.sort.join('|')]
-        input = UI.inputbox(prompts, defaults, list, 'Assign Connection Type')
+        UI.inputbox(prompts, defaults, list, title)
+      end
+
+      def prompt_assign_connection_type_to_selection
+        model = Sketchup.active_model
+        types = get_connection_types(model)
+
+        input = prompt_pick_connection_type('Assign Connection Type')
         return unless input
 
         type_id = input[0]
