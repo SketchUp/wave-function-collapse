@@ -1,4 +1,4 @@
-require 'tt_wfc/tile-tool'
+require 'tt_wfc/tile'
 
 module Examples
   module WFC
