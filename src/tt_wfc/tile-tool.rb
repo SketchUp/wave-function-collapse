@@ -54,6 +54,10 @@ module Examples
       def onMouseMove(flags, x, y, view)
         @mouse_position = Geom::Point3d.new(x, y)
         @mouse_over = pick_connection(view, x, y)
+
+        type = @mouse_over ? @mouse_over.type || '<unassigned>' : nil
+        view.tooltip = "Type: #{type}" if type
+
         view.invalidate
       end
 
