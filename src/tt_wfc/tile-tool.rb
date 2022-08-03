@@ -53,9 +53,9 @@ module Examples
       # @param [Sketchup::View] view
       def onMouseMove(flags, x, y, view)
         @mouse_position = Geom::Point3d.new(x, y)
-        if @selected && @mouse_left_button_down && !@mouse_drag
-          @mouse_drag = @mouse_left_button_down.distance(@mouse_position) >= DRAG_THRESHOLD
-        end
+        # if @selected && @mouse_left_button_down && !@mouse_drag
+        #   @mouse_drag = @mouse_left_button_down.distance(@mouse_position) >= DRAG_THRESHOLD
+        # end
 
         @mouse_over = pick_connection(view, x, y)
         view.invalidate
@@ -78,9 +78,9 @@ module Examples
       # @param [Integer] y
       # @param [Sketchup::View] view
       def onLButtonUp(flags, x, y, view)
-        if @selected && @mouse_over && @selected.tile != @mouse_over.tile
-          puts "Connected #{@selected} to #{@mouse_over}"
-        end
+        # if @selected && @mouse_over && @selected.tile != @mouse_over.tile
+        #   puts "Connected #{@selected} to #{@mouse_over}"
+        # end
 
         @mouse_left_button_down = nil
         @mouse_drag = false
