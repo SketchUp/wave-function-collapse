@@ -1,9 +1,12 @@
+require 'tt_wfc/constants/view'
 require 'tt_wfc/tile'
 
 module Examples
   module WFC
 
     class TileTool
+
+      include ViewConstants
 
       DRAG_THRESHOLD = 2 # pixels
 
@@ -94,18 +97,19 @@ module Examples
           points.concat(tile.connection_points)
         }
         view.line_width = 2
-        view.draw_points(points, 10, 3, 'orange')
+        view.draw_points(points, 12, DRAW_FILLED_SQUARE, 'black')
+        view.draw_points(points, 10, DRAW_PLUS, 'white')
 
         # Draw selected connection point.
         if @selected
           view.line_width = 2
-          view.draw_points([@selected.position], 10, 3, 'red')
+          view.draw_points([@selected.position], 12, DRAW_OPEN_SQUARE, 'red')
         end
 
         # Draw moused over connection point.
         if @mouse_over
           view.line_width = 2
-          view.draw_points([@mouse_over.position], 12, 1, 'purple')
+          view.draw_points([@mouse_over.position], 12, DRAW_OPEN_SQUARE, 'orange')
         end
 
         # Draw mouse drag

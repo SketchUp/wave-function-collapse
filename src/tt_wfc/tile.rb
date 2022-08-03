@@ -1,3 +1,5 @@
+require 'tt_wfc/constants/boundingbox'
+
 module Examples
   module WFC
 
@@ -25,6 +27,8 @@ module Examples
       end # class
 
       class ConnectionPoint
+
+        include BoundingBoxConstants
 
         attr_reader :tile, :connection_id, :position, :relationships
 
@@ -136,11 +140,6 @@ module Examples
       def write_connections_ids(instance, connection_id, connections)
         instance.set_attribute(SECTION_ID, connection_id.to_s, connections)
       end
-
-      BB_LEFT_FRONT_BOTTOM = 0
-      BB_RIGHT_FRONT_BOTTOM = 1
-      BB_LEFT_BACK_BOTTOM = 2
-      BB_RIGHT_BACK_BOTTOM = 3
 
       # @param [Sketchup::ComponentInstance] instance
       # @param [Symbol] connection_id
