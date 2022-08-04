@@ -9,18 +9,26 @@ module Examples
 
         include BoundingBoxConstants
 
-        attr_reader :tile, :connection_id, :position
+        # @return [Tile]
+        attr_reader :tile
+
+        # @return [Symbol]
+        attr_reader :connection_id
+
+        # @return [String]
         attr_reader :type
 
         # @param [Tile] tile
         # @param [Symbol] connection_id
         # @param [Geom::Point3d] position
-        def initialize(tile, connection_id, position)
+        def initialize(tile, connection_id)
           @tile = tile
           @connection_id = connection_id
-          @position = position
-
           @type = deserialize(tile.instance)
+          @position = nil # Lazily computed.
+          # Cache what instance transformation was used to compute the position.
+          # If this changes the position must be recalculated
+          @last_transformation_origin = nil
         end
 
         def type=(value)
@@ -28,6 +36,17 @@ module Examples
           serialize(tile.instance)
         end
 
+        # @return [Geom::Point3d]
+        def position
+          if @last_transformation_origin.nil? ||
+              @last_transformation_origin != tile.instance.transformation.origin
+            @position = connection_position(tile.instance, connection_id)
+            @last_transformation_origin = tile.instance.transformation.origin
+          end
+          @position
+        end
+
+        # @return [String]
         def to_s
           "#{@tile}:#{@connection_id}"
         end
@@ -46,66 +65,62 @@ module Examples
           instance.definition.get_attribute(SECTION_ID, @connection_id.to_s, nil)
         end
 
+        # @param [Sketchup::ComponentInstance] instance
+        # @param [Symbol] connection_id
+        # @return [Geom::Point3d]
+        def connection_position(instance, connection_id)
+          bb = instance.bounds
+          case connection_id
+          when :north
+            i1 = BB_LEFT_BACK_BOTTOM
+            i2 = BB_RIGHT_BACK_BOTTOM
+          when :south
+            i1 = BB_LEFT_FRONT_BOTTOM
+            i2 = BB_RIGHT_FRONT_BOTTOM
+          when :east
+            i1 = BB_RIGHT_FRONT_BOTTOM
+            i2 = BB_RIGHT_BACK_BOTTOM
+          when :west
+            i1 = BB_LEFT_FRONT_BOTTOM
+            i2 = BB_LEFT_BACK_BOTTOM
+          else
+            raise "invalid connection ID: #{connection_id}"
+          end
+          pt1 = bb.corner(i1)
+          pt2 = bb.corner(i2)
+          pt = Geom.linear_combination(0.5, pt1, 0.5, pt2)
+          pt.z = 0.0
+          pt
+        end
+
       end
 
       CONNECTION_IDS = [
         :north, :south, :east, :west
       ]
 
+      # @return [Sketchup::ComponentInstance]
       attr_reader :instance
+
+      # @return [Array<Tile::ConnectionPoint>]
+      attr_reader :connections
 
       # @param [Sketchup::ComponentInstance] instance
       def initialize(instance)
         @instance = instance
+        @connections = CONNECTION_IDS.map { |connection_id|
+          ConnectionPoint.new(self, connection_id)
+        }
       end
 
       # @return [Array<Geom::Point3d>]
       def connection_points
-        CONNECTION_IDS.map { |connection_id|
-          connection_position(@instance, connection_id)
-        }
+        connections.map(&:position)
       end
 
-      # @return [Array<Tile::ConnectionPoint>]
-      def connections
-        CONNECTION_IDS.map { |connection_id|
-          pt = connection_position(@instance, connection_id)
-          ConnectionPoint.new(self, connection_id, pt)
-        }
-      end
-
+      # @return [String]
       def to_s
         "Tile(#{object_id})"
-      end
-
-      private
-
-      # @param [Sketchup::ComponentInstance] instance
-      # @param [Symbol] connection_id
-      # @return [Geom::Point3d]
-      def connection_position(instance, connection_id)
-        bb = instance.bounds
-        case connection_id
-        when :north
-          i1 = BB_LEFT_BACK_BOTTOM
-          i2 = BB_RIGHT_BACK_BOTTOM
-        when :south
-          i1 = BB_LEFT_FRONT_BOTTOM
-          i2 = BB_RIGHT_FRONT_BOTTOM
-        when :east
-          i1 = BB_RIGHT_FRONT_BOTTOM
-          i2 = BB_RIGHT_BACK_BOTTOM
-        when :west
-          i1 = BB_LEFT_FRONT_BOTTOM
-          i2 = BB_LEFT_BACK_BOTTOM
-        else
-          raise "invalid connection ID: #{connection_id}"
-        end
-        pt1 = bb.corner(i1)
-        pt2 = bb.corner(i2)
-        pt = Geom.linear_combination(0.5, pt1, 0.5, pt2)
-        pt.z = 0.0
-        pt
       end
 
     end # class
