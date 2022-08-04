@@ -58,7 +58,7 @@ module Examples
       end
 
       def resume
-        # TODO: Don't resume if not complete.
+        raise 'generator is done' if stopped?
         raise 'already running' if @timer
         @timer = UI.start_timer(speed, true, &method(:update))
       end
