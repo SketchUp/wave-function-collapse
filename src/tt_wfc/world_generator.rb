@@ -126,6 +126,7 @@ module Examples
         puts "Sampled #{tile} for #{tile.possibilities.size} possibilities."
         tile.resolve_to(possibility)
         unresolved = neighbors(tile).reject(&:resolved?)
+        unresolved = sort_by_entropy(unresolved)
 
         unresolved.each { |neighbor|
           constrain_possibilities(neighbor)
@@ -151,6 +152,11 @@ module Examples
           tile.remove_possibilities(invalid)
           puts "Restrained #{tile} by #{invalid.size} possibilities (#{before} to #{tile.possibilities.size})." unless invalid.empty?
         }
+      end
+
+      # @param [Array<Tile>] tiles
+      def sort_by_entropy(tiles)
+        tiles.sort { |a, b| a.entropy <=> b.entropy }
       end
 
       # @param [Tile]

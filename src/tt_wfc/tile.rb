@@ -60,7 +60,7 @@ module Examples
           # @possibilities.delete(possibility)
           puts "WARN: #{self} unable to remove possibility" if @possibilities.delete(possibility).nil?
         }
-        puts "WARN: #{self} failed to resolve" if failed?
+        raise "#{self} failed to resolve" if failed?
         # p [:possibilities, :after, @possibilities.size, entropy]
         update
       end
@@ -79,7 +79,7 @@ module Examples
         raise "expected Possibility, got #{possibility.class}" unless possibility.is_a?(Possibility)
         raise 'already resolved' if resolved?
         raise 'possibility not found' unless possibilities.select! { |item| item == possibility }
-        warn 'tile failed to resolve' if failed?
+        raise "#{self} failed to resolve" if failed?
         update
       end
 
