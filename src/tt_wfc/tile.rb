@@ -52,13 +52,12 @@ module Examples
 
       # @param [Array<Possibility>] possibilities
       def remove_possibilities(possibilities)
-        # puts
         # p [:possibilities, :before, @possibilities.size, entropy]
         possibilities.each { |possibility|
           raise "expected Possibility, got #{possibility.class}" unless possibility.is_a?(Possibility)
           # raise 'already resolved' if resolved?
           # @possibilities.delete(possibility)
-          puts "WARN: #{self} unable to remove possibility" if @possibilities.delete(possibility).nil?
+          warn "#{self} unable to remove possibility" if @possibilities.delete(possibility).nil?
         }
         raise "#{self} failed to resolve" if failed?
         # p [:possibilities, :after, @possibilities.size, entropy]
@@ -131,7 +130,7 @@ module Examples
 
       def update
         if resolved?
-          puts "Resolved #{self}."
+          puts "Resolved #{self}." if Sketchup.read_default('TT_WFC', 'Log', false) # TODO: Kludge
           possibility = possibilities.first
           instance.definition = possibility.definition.instance.definition
 

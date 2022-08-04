@@ -32,6 +32,9 @@ module Examples
         @state = nil
         @timer = nil
         @speed = 0.1 # seconds
+
+        # Sketchup.write_default('TT_WFC', 'Log', true)
+        @log = Sketchup.read_default('TT_WFC', 'Log', false)
       end
 
       # @return [void]
@@ -72,12 +75,12 @@ module Examples
       end
 
       def update
-        puts
-        puts 'Update...'
+        log { '' }
+        log { 'Update...' }
         if state.stack.empty?
           unresolved = state.tiles.reject(&:resolved?)
           if unresolved.empty?
-            puts 'Generation complete!'
+            log { 'Generation complete!' }
             stop
             return
           end
@@ -123,7 +126,7 @@ module Examples
         raise 'already resolved' if tile.resolved?
 
         possibility = tile.possibilities.sample
-        puts "Sampled #{tile} for #{tile.possibilities.size} possibilities."
+        log { "Sampled #{tile} for #{tile.possibilities.size} possibilities." }
         tile.resolve_to(possibility)
         unresolved = neighbors(tile).reject(&:resolved?)
         unresolved = sort_by_entropy(unresolved)
@@ -150,7 +153,7 @@ module Examples
           }
           before = tile.possibilities.size
           tile.remove_possibilities(invalid)
-          puts "Restrained #{tile} by #{invalid.size} possibilities (#{before} to #{tile.possibilities.size})." unless invalid.empty?
+          log { "Restrained #{tile} by #{invalid.size} possibilities (#{before} to #{tile.possibilities.size})." } unless invalid.empty?
         }
       end
 
@@ -283,6 +286,10 @@ module Examples
           material.set_attribute('tt_wfc', 'entropy', [min, max])
           material
         }
+      end
+
+      def log
+        puts yield if @log
       end
 
     end
