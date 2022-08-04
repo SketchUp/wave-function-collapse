@@ -108,9 +108,30 @@ module Examples
 
         possibility = tile.possibilities.sample
         tile.resolve_to(possibility)
-        # TODO: update possibilities of neighbors
         unresolved = neighbors(tile).reject(&:resolved?)
+
+        unresolved.each { |neighbor|
+          constrain_possibilities(neighbor)
+        }
+        unresolved.reject!(&:resolved?) # Reject newly solved tiles
+
         state.stack.insert(unresolved)
+      end
+
+      # @param [Tile]
+      def constrain_possibilities(tile)
+        constrainers = neighbors(tile).reject(&:untouched?)
+        constrainers.each { |constrainer|
+          i1 = tile.edge_index_to_neighbor(constrainer)
+          i2 = constrainer.edge_index_to_neighbor(tile)
+
+          invalid = tile.possibilities.reject { |possibility|
+            constrainer.possibilities.any? { |cp|
+              possibility.edges[i1] == cp.edges[i2]
+            }
+          }
+          tile.remove_possibilities(invalid)
+        }
       end
 
       # @param [Tile]
@@ -159,8 +180,8 @@ module Examples
         ]
         face = definition.entities.add_face(points)
         face.reverse! if face.normal.samedirection?(Z_AXIS.reverse)
-        face.material = 'pink'
-        face.back_material = 'purple'
+        # face.material = 'pink'
+        # face.back_material = 'purple'
         definition
       end
 
@@ -178,7 +199,9 @@ module Examples
           height.times { |y|
             point = Geom::Point3d.new((x * size) + offset, (y * size) + offset, 0)
             tr = Geom::Transformation.translation(point)
-            instances << group.entities.add_instance(placeholder, tr)
+            instance = group.entities.add_instance(placeholder, tr)
+            instance.material = 'purple'
+            instances << instance
           }
         }
         instances

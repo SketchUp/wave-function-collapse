@@ -50,6 +50,16 @@ module Examples
         entropy == world.possibilities.size
       end
 
+      # @param [Array<Possibility>] possibilities
+      def remove_possibilities(possibilities)
+        possibilities.each { |possibility|
+          raise "expected Possibility, got #{possibility.class}" unless possibility.is_a?(Possibility)
+          raise 'already resolved' if resolved?
+          possibilities.delete(possibility)
+        }
+        update
+      end
+
       # @param [Possibility] possibility
       def remove_possibility(possibility)
         raise "expected Possibility, got #{possibility.class}" unless possibility.is_a?(Possibility)
@@ -68,6 +78,44 @@ module Examples
         update
       end
 
+      # @param [Tile] tile
+      def edge_index_to_neighbor(tile)
+        # :north, :east, :south, :west
+        if tile.north_of?(self)
+          0
+        elsif tile.east_of?(self)
+          1
+        elsif tile.south_of?(self)
+          2
+        elsif tile.west_of?(self)
+          3
+        end
+      end
+
+      # @param [Tile] tile
+      def north_of?(tile)
+        position.x == tile.position.x &&
+        position.y == tile.position.y + 1
+      end
+
+      # @param [Tile] tile
+      def east_of?(tile)
+        position.x == tile.position.x + 1 &&
+        position.y == tile.position.y
+      end
+
+      # @param [Tile] tile
+      def south_of?(tile)
+        position.x == tile.position.x &&
+        position.y == tile.position.y - 1
+      end
+
+      # @param [Tile] tile
+      def west_of?(tile)
+        position.x == tile.position.x - 1 &&
+        position.y == tile.position.y
+      end
+
       private
 
       def update
@@ -77,6 +125,9 @@ module Examples
 
           tr = Geom::Transformation.translation(instance.transformation.origin)
           instance.transformation = tr * possibility.transformation
+        else
+          # TODO: Use a gradient scale to indicate entropy.
+          instance.material = 'orange'
         end
       end
 
