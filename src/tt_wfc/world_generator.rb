@@ -18,16 +18,27 @@ module Examples
         @width = width
         @height = height
         @definitions = definitions # Tile Definitions
+        @state = nil
+        @timer = nil
       end
 
       # @return [void]
-      def run
+      def run(seconds = 0.5)
         model = Sketchup.active_model
         # Not disabling UI because this will be a "long operation" that uses a
         # timer for the main loop.
         model.start_operation('Generate World') # rubocop:disable SketchupPerformance/OperationDisableUI
         tiles = setup(model)
-        state = State.new(tiles)
+        @state = State.new(tiles)
+        @timer = UI.start_timer(seconds, true, &method(:update))
+      end
+
+      def stop
+        UI.stop_timer(@timer) if @timer
+      end
+
+      def update
+        puts 'update...'
       end
 
       private

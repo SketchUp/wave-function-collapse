@@ -22,10 +22,16 @@ module Examples
       }
       tile_definitions = instances.map { |instance| TileDefinition.new(instance) }
 
+      @generator&.stop
       # Start the generation
       width, height = input
-      generator = WorldGenerator.new(width, height, tile_definitions)
-      generator.run
+      @generator = WorldGenerator.new(width, height, tile_definitions)
+      @generator.run
+    end
+
+    def self.stop_current_generator
+      @generator&.stop
+      @generator = nil
     end
 
     def self.prompt_load_assets
@@ -69,6 +75,12 @@ module Examples
       menu = UI.menu('Plugins').add_submenu('Wave Function Collapse')
       menu.add_item('Generate World') {
         self.prompt_generate
+      }
+      id = menu.add_item('Stop Generation') {
+        self.stop_current_generator
+      }
+      menu.set_validation_proc(id)  {
+        @generator.nil? ? MF_DISABLED | MF_GRAYED : MF_ENABLED
       }
       menu.add_separator
       menu.add_item('Tile Tool') {
