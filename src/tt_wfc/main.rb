@@ -85,6 +85,10 @@ module Examples
       model.select_tool(tool)
     end
 
+    def self.active_generator?
+      @generator && !@generator.stopped?
+    end
+
     # @param [String] basename
     # @return [String]
     def self.icon(basename)
@@ -106,7 +110,7 @@ module Examples
         self.pause_current_generator
       }
       cmd.set_validation_proc  {
-        @generator.nil? ? MF_DISABLED | MF_GRAYED : MF_ENABLED
+        self.active_generator? ? MF_ENABLED : MF_DISABLED | MF_GRAYED
       }
       cmd.tooltip = cmd.menu_text
       cmd.small_icon = self.icon('pause')
@@ -117,7 +121,7 @@ module Examples
         self.stop_current_generator
       }
       cmd.set_validation_proc  {
-        @generator.nil? ? MF_DISABLED | MF_GRAYED : MF_ENABLED
+        self.active_generator? ? MF_ENABLED : MF_DISABLED | MF_GRAYED
       }
       cmd.tooltip = cmd.menu_text
       cmd.small_icon = self.icon('pause')
@@ -128,7 +132,7 @@ module Examples
         self.increase_current_generator_speed
       }
       cmd.set_validation_proc  {
-        @generator.nil? ? MF_DISABLED | MF_GRAYED : MF_ENABLED
+        self.active_generator? ? MF_ENABLED : MF_DISABLED | MF_GRAYED
       }
       cmd.tooltip = cmd.menu_text
       cmd.small_icon = self.icon('faster')
@@ -139,7 +143,7 @@ module Examples
         self.decrease_current_generator_speed
       }
       cmd.set_validation_proc  {
-        @generator.nil? ? MF_DISABLED | MF_GRAYED : MF_ENABLED
+        self.active_generator? ? MF_ENABLED : MF_DISABLED | MF_GRAYED
       }
       cmd.tooltip = cmd.menu_text
       cmd.small_icon = self.icon('slower')

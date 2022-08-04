@@ -1,4 +1,5 @@
 require 'tt_wfc/tile'
+require 'tt_wfc/uniq_queue'
 
 module Examples
   module WFC
@@ -23,7 +24,7 @@ module Examples
         @definitions = definitions # Tile Definitions
         @state = nil
         @timer = nil
-        @speed = 0.5 # seconds
+        @speed = 0.1 # seconds
       end
 
       # @return [void]
@@ -33,13 +34,18 @@ module Examples
         # timer for the main loop.
         model.start_operation('Generate World') # rubocop:disable SketchupPerformance/OperationDisableUI
         tiles = setup(model)
-        @state = State.new(tiles)
+        @state = State.new(tiles, UniqQueue.new)
         resume
       end
 
       def stop
         pause
-        # TODO: Finish operation.
+        @state = nil
+        Sketchup.active_model.commit_operation
+      end
+
+      def stopped?
+        @state.nil?
       end
 
       def paused?
@@ -59,11 +65,71 @@ module Examples
 
       def update
         puts 'update...'
+        if state.stack.empty?
+          unresolved = state.tiles.reject(&:resolved?)
+          if unresolved.empty?
+            puts 'complete!'
+            stop
+            return
+          end
+
+          touched = unresolved.reject(&:untouched?)
+          if touched.empty?
+            tile = unresolved.sample
+          else
+            tile = touched.min { |a, b| a.entropy <=> b.entropy }
+          end
+        else
+          tile = state.stack.pop
+        end
+        solve_tile(tile)
       end
 
       private
 
-      State = Struct.new(:tiles)
+      State = Struct.new(:tiles, :stack)
+      # @!parse
+      #   class State
+      #     attr_accessor :tiles, :stack
+      #   end
+
+      # @return [State]
+      attr_reader :state
+
+      # @param [Tile]
+      def solve_tile(tile)
+        raise 'already resolved' if tile.resolved?
+
+        definition = tile.possibilities.sample
+        tile.resolve_to(definition)
+        # TODO: update possibilities of neighbors
+        unresolved = neighbors(tile).reject(&:resolved?)
+        state.stack.insert(unresolved)
+      end
+
+      # @param [Tile]
+      # @return [Array<Tile>]
+      def neighbors(tile)
+        positions = [
+          tile.position.offset([-1,  0]),
+          tile.position.offset([ 0, -1]),
+          tile.position.offset([ 1,  0]),
+          tile.position.offset([ 0,  1]),
+        ]
+        positions.map { |position| tile_at(position) }.compact
+      end
+
+      # @param [Geom::Point3d] position
+      # @return [Tile]
+      def tile_at(position)
+        return nil if position.x < 0
+        return nil if position.y < 0
+        return nil if position.x >= width
+        return nil if position.y >= height
+
+        index = (width * position.y) + position.x
+        state.tiles[index]
+      end
 
       # @param [Sketchup::Model] model
       # @return [Array<Tile>]
