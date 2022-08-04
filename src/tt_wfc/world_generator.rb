@@ -31,7 +31,9 @@ module Examples
         @materials = generate_entropy_materials(@possibilities.size)
         @state = nil
         @timer = nil
-        @speed = 0.1 # seconds
+
+        # Sketchup.write_default('TT_WFC', 'Speed', 0.01)
+        @speed = Sketchup.read_default('TT_WFC', 'Speed', 0.1) # seconds
 
         # Sketchup.write_default('TT_WFC', 'Log', true)
         @log = Sketchup.read_default('TT_WFC', 'Log', false)
@@ -71,7 +73,18 @@ module Examples
       def resume
         raise 'generator is done' if stopped?
         raise 'already running' if @timer
-        @timer = UI.start_timer(speed, true, &method(:update))
+        if speed > 0.0
+          @timer = UI.start_timer(speed, true, &method(:update))
+        else
+          # Fast iteration. A timer at 0.0 will be slower than a normal loop.
+          t = Time.now
+          until stopped?
+            update
+          end
+          elapsed = Time.now - t
+          SKETCHUP_CONSOLE.show # TODO: Debug - remove after proper log control.
+          puts "Elapsed time: #{elapsed.round(4)} seconds"
+        end
       end
 
       def update
