@@ -95,8 +95,9 @@ module Examples
 
       end
 
+      # NOTE: It's important the order is clockwise.
       CONNECTION_IDS = [
-        :north, :south, :east, :west
+        :north, :east, :south, :west
       ]
 
       # @return [Sketchup::ComponentInstance]

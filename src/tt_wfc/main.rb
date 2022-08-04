@@ -101,6 +101,9 @@ module Examples
       cmd = UI::Command.new('Generate World') {
         self.prompt_generate
       }
+      cmd.set_validation_proc  {
+        !self.active_generator? ? MF_ENABLED : MF_DISABLED | MF_GRAYED
+      }
       cmd.tooltip = cmd.menu_text
       cmd.small_icon = self.icon('world')
       cmd.large_icon = self.icon('world')

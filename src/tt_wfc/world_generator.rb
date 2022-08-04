@@ -4,13 +4,18 @@ require 'tt_wfc/uniq_queue'
 module Examples
   module WFC
 
+    Possibility = Struct.new(:definition, :edges, :transformation)
+
     class WorldGenerator
 
       # @return [Integer]
       attr_reader :width, :height
 
-      # @return [Array<TileDefinition>] definitions
+      # @return [Array<TileDefinition>]
       attr_reader :definitions
+
+      # @return [Array<Possibility>]
+      attr_reader :possibilities
 
       # @return [Float]
       attr_reader :speed
@@ -22,6 +27,7 @@ module Examples
         @width = width
         @height = height
         @definitions = definitions # Tile Definitions
+        @possibilities = generate_possibilities(definitions)
         @state = nil
         @timer = nil
         @speed = 0.1 # seconds
@@ -64,11 +70,11 @@ module Examples
       end
 
       def update
-        puts 'update...'
+        # puts 'update...'
         if state.stack.empty?
           unresolved = state.tiles.reject(&:resolved?)
           if unresolved.empty?
-            puts 'complete!'
+            puts 'Generation complete!'
             stop
             return
           end
@@ -100,8 +106,8 @@ module Examples
       def solve_tile(tile)
         raise 'already resolved' if tile.resolved?
 
-        definition = tile.possibilities.sample
-        tile.resolve_to(definition)
+        possibility = tile.possibilities.sample
+        tile.resolve_to(possibility)
         # TODO: update possibilities of neighbors
         unresolved = neighbors(tile).reject(&:resolved?)
         state.stack.insert(unresolved)
@@ -176,6 +182,32 @@ module Examples
           }
         }
         instances
+      end
+
+      # @param [Array<TileDefinition>] definitions
+      def generate_possibilities(definitions)
+        result = []
+        definitions.each { |definition|
+          edges = definition.connections.map(&:type)
+          4.times { |i|
+            # :north, :east, :south, :west
+            # --------------------
+            # edges = [n, e, s, w]
+            # tr = 0
+            # --------------------
+            # edges = [e, s, w, n]
+            # tr = -90
+            # --------------------
+            # edges = [s, w, n, e]
+            # tr = -180
+            # --------------------
+            # edges = [w, n, e, s]
+            # tr = -270
+            tr = Geom::Transformation.rotation(ORIGIN, Z_AXIS, 90.degrees * -i)
+            result << Possibility.new(definition, edges.rotate(i), tr)
+          }
+        }
+        result
       end
 
     end
