@@ -71,17 +71,36 @@ module Examples
       model.select_tool(tool)
     end
 
+    # @param [String] basename
+    # @return [String]
+    def self.icon(basename)
+      # https://www.svgrepo.com/
+      File.join(__dir__, 'icons', "#{basename}.svg")
+    end
+
     unless file_loaded?(__FILE__)
-      menu = UI.menu('Plugins').add_submenu('Wave Function Collapse')
-      menu.add_item('Generate World') {
+      # Commands
+      cmd = UI::Command.new('Generate World') {
         self.prompt_generate
       }
-      id = menu.add_item('Stop Generation') {
+      cmd.small_icon = self.icon('world')
+      cmd.large_icon = self.icon('world')
+      cmd_generate_world = cmd
+
+      cmd = UI::Command.new('Stop Generation') {
         self.stop_current_generator
       }
-      menu.set_validation_proc(id)  {
+      cmd.set_validation_proc  {
         @generator.nil? ? MF_DISABLED | MF_GRAYED : MF_ENABLED
       }
+      cmd.small_icon = self.icon('stop')
+      cmd.large_icon = self.icon('stop')
+      cmd_stop_generation = cmd
+
+      # Menus
+      menu = UI.menu('Plugins').add_submenu('Wave Function Collapse')
+      menu.add_item(cmd_generate_world)
+      menu.add_item(cmd_stop_generation)
       menu.add_separator
       menu.add_item('Tile Tool') {
         self.activate_tile_tool
@@ -89,6 +108,13 @@ module Examples
       menu.add_item('Load Assets') {
         self.prompt_load_assets
       }
+
+      # Toolbar
+      toolbar = UI::Toolbar.new('Wave Function Collapse')
+      toolbar = toolbar.add_item(cmd_generate_world)
+      toolbar = toolbar.add_item(cmd_stop_generation)
+      toolbar.restore
+
       file_loaded(__FILE__)
     end
 
