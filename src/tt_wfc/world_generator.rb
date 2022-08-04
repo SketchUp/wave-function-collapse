@@ -28,6 +28,7 @@ module Examples
         @height = height
         @definitions = definitions # Tile Definitions
         @possibilities = generate_possibilities(definitions)
+        @materials = generate_entropy_materials(@possibilities.size)
         @state = nil
         @timer = nil
         @speed = 0.1 # seconds
@@ -40,7 +41,8 @@ module Examples
         # timer for the main loop.
         model.start_operation('Generate World') # rubocop:disable SketchupPerformance/OperationDisableUI
         tiles = setup(model)
-        @state = State.new(tiles, UniqQueue.new)
+        # @state = State.new(tiles, UniqQueue.new)
+        @state = State.new(tiles, UniqQueue.new { |a, b| a.entropy <=> b.entropy })
         resume
       end
 
@@ -70,7 +72,8 @@ module Examples
       end
 
       def update
-        # puts 'update...'
+        puts
+        puts 'Update...'
         if state.stack.empty?
           unresolved = state.tiles.reject(&:resolved?)
           if unresolved.empty?
@@ -89,6 +92,19 @@ module Examples
           tile = state.stack.pop
         end
         solve_tile(tile)
+      rescue
+        pause
+        raise
+      end
+
+      # @param [Integer] entropy
+      # @return [Sketchup::Material]
+      def material_from_entropy(entropy)
+        max = @possibilities.size
+        ratio = entropy.to_f / max.to_f
+        i = ((@materials.size - 1) * ratio).to_i
+        # p [:entropy, entropy, :max, max, :ratio, ratio, :i, i, @materials[i].name, @materials[i].color.to_a]
+        @materials[i]
       end
 
       private
@@ -107,6 +123,7 @@ module Examples
         raise 'already resolved' if tile.resolved?
 
         possibility = tile.possibilities.sample
+        puts "Sampled #{tile} for #{tile.possibilities.size} possibilities."
         tile.resolve_to(possibility)
         unresolved = neighbors(tile).reject(&:resolved?)
 
@@ -130,7 +147,9 @@ module Examples
               possibility.edges[i1] == cp.edges[i2]
             }
           }
+          before = tile.possibilities.size
           tile.remove_possibilities(invalid)
+          puts "Restrained #{tile} by #{invalid.size} possibilities (#{before} to #{tile.possibilities.size})." unless invalid.empty?
         }
       end
 
@@ -231,6 +250,33 @@ module Examples
           }
         }
         result
+      end
+
+      # @param [Integer] max_entropy
+      # @param [Integer] steps Number of materials to generate.
+      # @return [Array<Sketchup::Material>]
+      def generate_entropy_materials(max_entropy, steps = 10)
+        model = Sketchup.active_model
+        # Discard old materials.
+        existing = model.materials.select { |material|
+          material.get_attribute('tt_wfc', 'entropy', false)
+        }
+        existing.each { |material|
+          model.materials.remove(material)
+        }
+        # Generate new materials.
+        step_range = max_entropy / steps
+        resolved_color = Sketchup::Color.new('white')
+        unresolved_color = Sketchup::Color.new('orange')
+        steps.times.map { |i|
+          min = step_range * i
+          max = min + step_range
+          weight = i.to_f / steps.to_f
+          material = model.materials.add("WCF Entropy (#{min}-#{max})")
+          material.color = resolved_color.blend(unresolved_color, weight)
+          material.set_attribute('tt_wfc', 'entropy', [min, max])
+          material
+        }
       end
 
     end

@@ -1,10 +1,11 @@
 module Examples
   module WFC
 
+    # TODO: Rename
     class UniqQueue
 
-      def initialize
-        @queue = Queue.new
+      def initialize(&block)
+        @pop_proc = block
         @set = Set.new
       end
 
@@ -13,14 +14,13 @@ module Examples
       def push(value)
         return false if @set.include?(value)
 
-        @queue.push(value)
         @set.add(value)
         true
       end
 
       # @return [Object]
       def pop
-        item = @queue.pop
+        item = @set.min(&@pop_proc)
         @set.delete(item)
         item
       end
@@ -31,12 +31,12 @@ module Examples
       end
 
       def empty?
-        @queue.empty?
+        @set.empty?
       end
 
       # @return [Integer]
       def size
-        @queue.size
+        @set.size
       end
       alias :length :size
 

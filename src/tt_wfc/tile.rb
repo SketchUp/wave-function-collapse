@@ -52,11 +52,16 @@ module Examples
 
       # @param [Array<Possibility>] possibilities
       def remove_possibilities(possibilities)
+        # puts
+        # p [:possibilities, :before, @possibilities.size, entropy]
         possibilities.each { |possibility|
           raise "expected Possibility, got #{possibility.class}" unless possibility.is_a?(Possibility)
-          raise 'already resolved' if resolved?
-          possibilities.delete(possibility)
+          # raise 'already resolved' if resolved?
+          # @possibilities.delete(possibility)
+          puts "WARN: #{self} unable to remove possibility" if @possibilities.delete(possibility).nil?
         }
+        puts "WARN: #{self} failed to resolve" if failed?
+        # p [:possibilities, :after, @possibilities.size, entropy]
         update
       end
 
@@ -116,18 +121,25 @@ module Examples
         position.y == tile.position.y
       end
 
+      # @return [String]
+        def to_s
+          x, y = position.to_a.map(&:to_i)
+          "Tile<(#{x}, #{y}) #{entropy}:#{world.possibilities.size}>"
+        end
+
       private
 
       def update
         if resolved?
+          puts "Resolved #{self}."
           possibility = possibilities.first
           instance.definition = possibility.definition.instance.definition
 
           tr = Geom::Transformation.translation(instance.transformation.origin)
           instance.transformation = tr * possibility.transformation
         else
-          # TODO: Use a gradient scale to indicate entropy.
-          instance.material = 'orange'
+          # p [:update]
+          instance.material = world.material_from_entropy(entropy)
         end
       end
 
