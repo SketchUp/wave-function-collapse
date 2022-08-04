@@ -11,6 +11,9 @@ module Examples
       # @return [Array<TileDefinition>] definitions
       attr_reader :definitions
 
+      # @return [Float]
+      attr_reader :speed
+
       # @param [Integer] width
       # @param [Integer] height
       # @param [Array<TileDefinition>] definitions
@@ -20,21 +23,38 @@ module Examples
         @definitions = definitions # Tile Definitions
         @state = nil
         @timer = nil
+        @speed = 0.5 # seconds
       end
 
       # @return [void]
-      def run(seconds = 0.5)
+      def run
         model = Sketchup.active_model
         # Not disabling UI because this will be a "long operation" that uses a
         # timer for the main loop.
         model.start_operation('Generate World') # rubocop:disable SketchupPerformance/OperationDisableUI
         tiles = setup(model)
         @state = State.new(tiles)
-        @timer = UI.start_timer(seconds, true, &method(:update))
+        resume
       end
 
       def stop
+        pause
+        # TODO: Finish operation.
+      end
+
+      def paused?
+        @timer.nil?
+      end
+
+      def pause
         UI.stop_timer(@timer) if @timer
+        @timer = nil
+      end
+
+      def resume
+        # TODO: Don't resume if not complete.
+        raise 'already running' if @timer
+        @timer = UI.start_timer(speed, true, &method(:update))
       end
 
       def update

@@ -34,6 +34,20 @@ module Examples
       @generator = nil
     end
 
+    def self.pause_current_generator
+      return if @generator.nil?
+
+      @generator.paused? ? @generator.resume : @generator.pause
+    end
+
+    def self.decrease_current_generator_speed
+      @generator&.decrease_speed
+    end
+
+    def self.increase_current_generator_speed
+      @generator&.increase_speed
+    end
+
     def self.prompt_load_assets
       directory = UI.select_directory(
         title: "Select Asset Directory",
