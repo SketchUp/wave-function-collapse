@@ -1,3 +1,5 @@
+require 'tt_wfc/tile'
+
 module Examples
   module WFC
 
@@ -24,15 +26,22 @@ module Examples
         # Not disabling UI because this will be a "long operation" that uses a
         # timer for the main loop.
         model.start_operation('Generate World') # rubocop:disable SketchupPerformance/OperationDisableUI
-        setup(model)
+        tiles = setup(model)
+        state = State.new(tiles)
       end
 
       private
 
+      State = Struct.new(:tiles)
+
       # @param [Sketchup::Model] model
+      # @return [Array<Tile>]
       def setup(model)
         placeholder = generate_placeholder(model)
         instances = generate_instance_grid(model, placeholder)
+        instances.map.with_index { |instance, i|
+          Tile.new(self, instance, i)
+        }
       end
 
       # @param [Sketchup::Model] model
