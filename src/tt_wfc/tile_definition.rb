@@ -3,13 +3,13 @@ require 'tt_wfc/constants/boundingbox'
 module Examples
   module WFC
 
-    class Tile
+    class TileDefinition
 
       class ConnectionPoint
 
         include BoundingBoxConstants
 
-        # @return [Tile]
+        # @return [TileDefinition]
         attr_reader :tile
 
         # @return [Symbol]
@@ -18,7 +18,7 @@ module Examples
         # @return [String]
         attr_reader :type
 
-        # @param [Tile] tile
+        # @param [TileDefinition] tile
         # @param [Symbol] connection_id
         # @param [Geom::Point3d] position
         def initialize(tile, connection_id)
@@ -102,7 +102,7 @@ module Examples
       # @return [Sketchup::ComponentInstance]
       attr_reader :instance
 
-      # @return [Array<Tile::ConnectionPoint>]
+      # @return [Array<TileDefinition::ConnectionPoint>]
       attr_reader :connections
 
       # @param [Sketchup::ComponentInstance] instance
@@ -120,7 +120,7 @@ module Examples
 
       # @return [String]
       def to_s
-        "Tile(#{object_id})"
+        "TileDefinition(#{object_id})"
       end
 
     end # class

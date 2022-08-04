@@ -1,9 +1,32 @@
 require 'sketchup.rb'
 
-require 'tt_wfc/tile-tool'
+require 'tt_wfc/tile_tool'
+require 'tt_wfc/world_generator'
 
 module Examples
   module WFC
+
+    def self.prompt_generate
+      prompts = ["Width", "Height"]
+      defaults = [10, 10]
+      input = UI.inputbox(prompts, defaults, "Generate World")
+      return unless input
+
+      # Use only selected tiles if any are selected.
+      model = Sketchup.active_model
+      tile_tag = model.layers['Tiles']
+      raise "'Tiles' tag not found" if tile_tag.nil?
+      source = model.selection.empty? ? model.entities : model.selection
+      instances = source.grep(Sketchup::ComponentInstance).select { |instance|
+        instance.layer = tile_tag
+      }
+      tile_definitions = instances.map { |instance| TileDefinition.new(instance) }
+
+      # Start the generation
+      width, height = input
+      generator = WorldGenerator.new(width, height, tile_definitions)
+      generator.run
+    end
 
     def self.prompt_load_assets
       directory = UI.select_directory(
@@ -44,10 +67,13 @@ module Examples
 
     unless file_loaded?(__FILE__)
       menu = UI.menu('Plugins').add_submenu('Wave Function Collapse')
+      menu.add_item('Generate World') {
+        self.prompt_generate
+      }
+      menu.add_separator
       menu.add_item('Tile Tool') {
         self.activate_tile_tool
       }
-      menu.add_separator
       menu.add_item('Load Assets') {
         self.prompt_load_assets
       }

@@ -1,5 +1,5 @@
 require 'tt_wfc/constants/view'
-require 'tt_wfc/tile'
+require 'tt_wfc/tile_definition'
 
 module Examples
   module WFC
@@ -13,10 +13,10 @@ module Examples
       def initialize
         @tiles = load_tiles
 
-        # @type [Set<Tile::ConnectionPoint>]
+        # @type [Set<TileDefinition::ConnectionPoint>]
         @selection = Set.new
 
-        # @type [Tile::ConnectionPoint, nil]
+        # @type [TileDefinition::ConnectionPoint, nil]
         @mouse_over = nil
 
         # @type [Geom::Point3d, nil]
@@ -217,7 +217,7 @@ module Examples
         connection
       end
 
-      # @return [Array<Tile>]
+      # @return [Array<TileDefinition>]
       def load_tiles
         model = Sketchup.active_model
         tile_tag = model.layers['Tiles']
@@ -226,7 +226,7 @@ module Examples
         instances = model.entities.grep(Sketchup::ComponentInstance).select { |instance|
           instance.layer = tile_tag
         }
-        instances.map { |instance| Tile.new(instance) }
+        instances.map { |instance| TileDefinition.new(instance) }
       end
 
       ATTR_DICT = 'tt_wfc'
