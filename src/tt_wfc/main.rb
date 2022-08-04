@@ -83,9 +83,21 @@ module Examples
       cmd = UI::Command.new('Generate World') {
         self.prompt_generate
       }
+      cmd.tooltip = cmd.menu_text
       cmd.small_icon = self.icon('world')
       cmd.large_icon = self.icon('world')
       cmd_generate_world = cmd
+
+      cmd = UI::Command.new('Pause Generation') {
+        self.pause_current_generator
+      }
+      cmd.set_validation_proc  {
+        @generator.nil? ? MF_DISABLED | MF_GRAYED : MF_ENABLED
+      }
+      cmd.tooltip = cmd.menu_text
+      cmd.small_icon = self.icon('pause')
+      cmd.large_icon = self.icon('pause')
+      cmd_pause_generation = cmd
 
       cmd = UI::Command.new('Stop Generation') {
         self.stop_current_generator
@@ -93,14 +105,42 @@ module Examples
       cmd.set_validation_proc  {
         @generator.nil? ? MF_DISABLED | MF_GRAYED : MF_ENABLED
       }
-      cmd.small_icon = self.icon('stop')
+      cmd.tooltip = cmd.menu_text
+      cmd.small_icon = self.icon('pause')
       cmd.large_icon = self.icon('stop')
       cmd_stop_generation = cmd
+
+      cmd = UI::Command.new('Increase Speed') {
+        self.increase_current_generator_speed
+      }
+      cmd.set_validation_proc  {
+        @generator.nil? ? MF_DISABLED | MF_GRAYED : MF_ENABLED
+      }
+      cmd.tooltip = cmd.menu_text
+      cmd.small_icon = self.icon('faster')
+      cmd.large_icon = self.icon('faster')
+      cmd_increase_speed = cmd
+
+      cmd = UI::Command.new('Decrease Speed') {
+        self.decrease_current_generator_speed
+      }
+      cmd.set_validation_proc  {
+        @generator.nil? ? MF_DISABLED | MF_GRAYED : MF_ENABLED
+      }
+      cmd.tooltip = cmd.menu_text
+      cmd.small_icon = self.icon('slower')
+      cmd.large_icon = self.icon('slower')
+      cmd_decrease_speed = cmd
 
       # Menus
       menu = UI.menu('Plugins').add_submenu('Wave Function Collapse')
       menu.add_item(cmd_generate_world)
+      menu.add_separator
+      menu.add_item(cmd_pause_generation)
       menu.add_item(cmd_stop_generation)
+      menu.add_separator
+      menu.add_item(cmd_decrease_speed)
+      menu.add_item(cmd_increase_speed)
       menu.add_separator
       menu.add_item('Tile Tool') {
         self.activate_tile_tool
@@ -111,8 +151,13 @@ module Examples
 
       # Toolbar
       toolbar = UI::Toolbar.new('Wave Function Collapse')
-      toolbar = toolbar.add_item(cmd_generate_world)
-      toolbar = toolbar.add_item(cmd_stop_generation)
+      toolbar.add_item(cmd_generate_world)
+      toolbar.add_separator
+      toolbar.add_item(cmd_pause_generation)
+      toolbar.add_item(cmd_stop_generation)
+      toolbar.add_separator
+      toolbar.add_item(cmd_decrease_speed)
+      toolbar.add_item(cmd_increase_speed)
       toolbar.restore
 
       file_loaded(__FILE__)
