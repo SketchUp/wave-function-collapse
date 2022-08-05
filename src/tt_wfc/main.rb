@@ -26,7 +26,7 @@ module Examples
       # Start the generation
       width, height = input
       @generator = WorldGenerator.new(width, height, tile_definitions)
-      @generator.run
+      @generator.run(start_paused: self.start_paused?)
     end
 
     def self.stop_current_generator
@@ -40,12 +40,24 @@ module Examples
       @generator.paused? ? @generator.resume : @generator.pause
     end
 
+    def self.toggle_start_paused
+      Sketchup.write_default('TT_WFC', 'StartPaused', !self.start_paused?)
+    end
+
+    def self.start_paused?
+      Sketchup.read_default('TT_WFC', 'StartPaused', false)
+    end
+
     def self.decrease_current_generator_speed
       @generator&.decrease_speed
     end
 
     def self.increase_current_generator_speed
       @generator&.increase_speed
+    end
+
+    def self.advance_next_step
+      @generator&.update
     end
 
     def self.prompt_load_assets
@@ -127,7 +139,7 @@ module Examples
         self.active_generator? ? MF_ENABLED : MF_DISABLED | MF_GRAYED
       }
       cmd.tooltip = cmd.menu_text
-      cmd.small_icon = self.icon('pause')
+      cmd.small_icon = self.icon('stop')
       cmd.large_icon = self.icon('stop')
       cmd_stop_generation = cmd
 
@@ -153,6 +165,28 @@ module Examples
       cmd.large_icon = self.icon('slower')
       cmd_decrease_speed = cmd
 
+      cmd = UI::Command.new('Start Paused') {
+        self.toggle_start_paused
+      }
+      cmd.set_validation_proc  {
+        self.start_paused? ? MF_CHECKED : MF_ENABLED
+      }
+      cmd.tooltip = cmd.menu_text
+      cmd.small_icon = self.icon('halt')
+      cmd.large_icon = self.icon('halt')
+      cmd_toggle_start_paused = cmd
+
+      cmd = UI::Command.new('Step') {
+        self.advance_next_step
+      }
+      cmd.set_validation_proc  {
+        self.active_generator? ? MF_ENABLED : MF_DISABLED | MF_GRAYED
+      }
+      cmd.tooltip = cmd.menu_text
+      cmd.small_icon = self.icon('step')
+      cmd.large_icon = self.icon('step')
+      cmd_step = cmd
+
       # Menus
       menu = UI.menu('Plugins').add_submenu('Wave Function Collapse')
       menu.add_item(cmd_generate_world)
@@ -160,8 +194,11 @@ module Examples
       menu.add_item(cmd_pause_generation)
       menu.add_item(cmd_stop_generation)
       menu.add_separator
-      menu.add_item(cmd_decrease_speed)
-      menu.add_item(cmd_increase_speed)
+      menu.add_item(cmd_step)
+      menu.add_item(cmd_toggle_start_paused)
+      # menu.add_separator
+      # menu.add_item(cmd_decrease_speed)
+      # menu.add_item(cmd_increase_speed)
       menu.add_separator
       menu.add_item('Tile Tool') {
         self.activate_tile_tool
@@ -177,8 +214,11 @@ module Examples
       toolbar.add_item(cmd_pause_generation)
       toolbar.add_item(cmd_stop_generation)
       toolbar.add_separator
-      toolbar.add_item(cmd_decrease_speed)
-      toolbar.add_item(cmd_increase_speed)
+      toolbar.add_item(cmd_step)
+      toolbar.add_item(cmd_toggle_start_paused)
+      # toolbar.add_separator
+      # toolbar.add_item(cmd_decrease_speed)
+      # toolbar.add_item(cmd_increase_speed)
       toolbar.restore
 
       file_loaded(__FILE__)
