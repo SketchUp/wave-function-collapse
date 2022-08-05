@@ -146,6 +146,11 @@ module Examples
         @materials[i]
       end
 
+      def to_s
+        "#{self.class}(#{state&.status || 'initial'}, #{width}x#{height}, seed: #{seed})"
+      end
+      alias inspect to_s
+
       private
 
       STATUSES = [:running, :paused, :stopped]
@@ -158,20 +163,30 @@ module Examples
 
       # @param [Tile]
       def solve_tile(tile)
-        raise 'already resolved' if tile.resolved?
+        # If a tile was resolved as a result of constraints it's neighbors needs
+        # to be processed.
+        unless tile.resolved?
+          possibility = sample(tile.possibilities)
+          log { "Sampled #{tile} for #{tile.possibilities.size} possibilities. (#{tile.instance.persistent_id})" }
+          tile.resolve_to(possibility)
+        end
 
-        possibility = sample(tile.possibilities)
-        log { "Sampled #{tile} for #{tile.possibilities.size} possibilities." }
-        tile.resolve_to(possibility)
+        # Once a tile is resolved all it's neighbors needs to be evaluated.
+        # If any of those change their neighbors also needs to be evaluated.
+        # The unresolved neighbors are constrained in the order of least
+        # entropy in order to increase the chance of being able to resolve
+        # a solution.
         unresolved = neighbors(tile).reject(&:resolved?)
         unresolved = sort_by_entropy(unresolved)
 
-        unresolved.each { |neighbor|
-          constrain_possibilities(neighbor)
-        }
-        unresolved.reject!(&:resolved?) # Reject newly solved tiles
+        log { "#{tile} unresolved neighbors: #{unresolved}" }
 
-        state.queue.insert(unresolved)
+        # Any modified neighboring tiles must be put into the queue for
+        # evaluation.
+        modified = unresolved.select { |neighbor|
+          constrain_possibilities(neighbor) > 0
+        }
+        state.queue.insert(modified)
       end
 
       # @param [Enumerable] enumerable
@@ -182,7 +197,9 @@ module Examples
       end
 
       # @param [Tile]
+      # @param [Integer]
       def constrain_possibilities(tile)
+        constrained = 0
         constrainers = neighbors(tile).reject(&:untouched?)
         constrainers.each { |constrainer|
           i1 = tile.edge_index_to_neighbor(constrainer)
@@ -196,7 +213,9 @@ module Examples
           before = tile.possibilities.size
           tile.remove_possibilities(invalid)
           log { "Restrained #{tile} by #{invalid.size} possibilities (#{before} to #{tile.possibilities.size})." } unless invalid.empty?
+          constrained += invalid.size
         }
+        constrained
       end
 
       # @param [Array<Tile>] tiles
@@ -219,12 +238,13 @@ module Examples
       # @param [Geom::Point3d] position
       # @return [Tile]
       def tile_at(position)
-        return nil if position.x < 0
-        return nil if position.y < 0
-        return nil if position.x >= width
-        return nil if position.y >= height
+        x, y = position.to_a.take(2).map(&:to_i)
+        return nil if x < 0
+        return nil if y < 0
+        return nil if x >= width
+        return nil if y >= height
 
-        index = (width * position.y) + position.x
+        index = (width * y) + x
         state.tiles[index]
       end
 
@@ -250,8 +270,6 @@ module Examples
         ]
         face = definition.entities.add_face(points)
         face.reverse! if face.normal.samedirection?(Z_AXIS.reverse)
-        # face.material = 'pink'
-        # face.back_material = 'purple'
         definition
       end
 
@@ -265,11 +283,13 @@ module Examples
         instances = []
         group = model.entities.add_group
         group.transform!(Geom::Vector3d.new(0, 0, 1.m))
-        width.times { |x|
-          height.times { |y|
+        height.times { |y|
+          width.times { |x|
             point = Geom::Point3d.new((x * size) + offset, (y * size) + offset, 0)
             tr = Geom::Transformation.translation(point)
             instance = group.entities.add_instance(placeholder, tr)
+            instance.set_attribute('tt_wfc', 'position', [x, y])
+            instance.set_attribute('tt_wfc', 'index', (y * width) + x)
             instance.material = 'purple'
             instances << instance
           }
@@ -296,7 +316,7 @@ module Examples
             # --------------------
             # edges = [w, n, e, s]
             # tr = -270
-            tr = Geom::Transformation.rotation(ORIGIN, Z_AXIS, 90.degrees * -i)
+            tr = Geom::Transformation.rotation(ORIGIN, Z_AXIS, 90.degrees * i)
             result << Possibility.new(definition, edges.rotate(i), tr)
           }
         }

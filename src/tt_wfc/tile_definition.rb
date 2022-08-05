@@ -50,6 +50,7 @@ module Examples
         def to_s
           "#{@tile}:#{@connection_id}"
         end
+        alias inspect to_s
 
         private
 
@@ -123,6 +124,7 @@ module Examples
       def to_s
         "TileDefinition(#{object_id})"
       end
+      alias inspect to_s
 
     end # class
 

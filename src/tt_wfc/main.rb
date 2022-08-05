@@ -6,6 +6,11 @@ require 'tt_wfc/world_generator'
 module Examples
   module WFC
 
+    # generator = Examples::WFC.generator
+    def self.generator
+      @generator
+    end
+
     def self.prompt_set_generator_seed
       seed = Sketchup.read_default('TT_WFC', 'Seed', 0)
 
@@ -250,6 +255,20 @@ module Examples
 
       file_loaded(__FILE__)
     end
+
+=begin
+
+model = Sketchup.active_model
+generator = Examples::WFC.generator
+pos = generator.possibilities.slice(4, 4)
+pos.each { |pb|
+  g = model.entities.add_group
+  g.transform!([0,0,5.m])
+  g.entities.add_instance(pb.definition.instance.definition, pb.transformation)
+  g.set_attribute('wfc', 'edges', pb.edges)
+}
+
+=end
 
   end # module WFC
 end # module Examples

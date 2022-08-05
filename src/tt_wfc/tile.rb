@@ -93,6 +93,8 @@ module Examples
           2
         elsif tile.west_of?(self)
           3
+        else
+          raise "#{self} to #{tile} share no edge"
         end
       end
 
@@ -121,16 +123,17 @@ module Examples
       end
 
       # @return [String]
-        def to_s
-          x, y = position.to_a.map(&:to_i)
-          "Tile<(#{x}, #{y}) #{entropy}:#{world.possibilities.size}>"
-        end
+      def to_s
+        x, y = position.to_a.map(&:to_i)
+        "Tile<(#{x}, #{y} [#{index}]) #{entropy}:#{world.possibilities.size}>"
+      end
+      alias inspect to_s
 
       private
 
       def update
         if resolved?
-          puts "Resolved #{self}." if Sketchup.read_default('TT_WFC', 'Log', false) # TODO: Kludge
+          puts "Resolved #{self}. (Instance: #{instance.persistent_id})" if Sketchup.read_default('TT_WFC', 'Log', false) # TODO: Kludge
           possibility = possibilities.first
           instance.definition = possibility.definition.instance.definition
 
