@@ -1,10 +1,14 @@
 require 'tt_wfc/tile'
-require 'tt_wfc/uniq_queue'
+require 'tt_wfc/tile_queue'
 
 module Examples
   module WFC
 
     Possibility = Struct.new(:definition, :edges, :transformation)
+    # @!parse
+    #   class Possibility
+    #     attr_accessor :definition, :edges, :transformation
+    #   end
 
     class WorldGenerator
 
@@ -19,6 +23,9 @@ module Examples
 
       # @return [Float]
       attr_reader :speed
+
+      # @return [State]
+      attr_reader :state
 
       # @param [Integer] width
       # @param [Integer] height
@@ -39,35 +46,40 @@ module Examples
         @log = Sketchup.read_default('TT_WFC', 'Log', false)
       end
 
+      # @param [Boolean] start_paused
       # @return [void]
-      def run
+      def run(start_paused: false)
         model = Sketchup.active_model
         # Not disabling UI because this will be a "long operation" that uses a
         # timer for the main loop.
         model.start_operation('Generate World') # rubocop:disable SketchupPerformance/OperationDisableUI
         tiles = setup(model)
-        # @state = State.new(tiles, UniqQueue.new)
-        @state = State.new(tiles, UniqQueue.new { |a, b| a.entropy <=> b.entropy })
-        resume
+        @state = State.new(tiles, TileQueue.new, :running)
+        start_paused ? pause : resume
       end
 
       def stop
         pause
-        @state = nil
+        @state.status = :stopped
         Sketchup.active_model.commit_operation
       end
 
+      def running?
+        @state && @state.status == :running
+      end
+
       def stopped?
-        @state.nil?
+        @state && @state.status == :stopped
       end
 
       def paused?
-        @timer.nil?
+        @state && @state.status == :paused
       end
 
       def pause
         UI.stop_timer(@timer) if @timer
         @timer = nil
+        @state.status = :paused
       end
 
       def resume
@@ -76,6 +88,11 @@ module Examples
         if speed > 0.0
           @timer = UI.start_timer(speed, true, &method(:update))
         else
+          model = Sketchup.active_model
+          # Because this isn't done in a timer we can disable the UI and get
+          # more performance out of the operation.
+          model.commit_operation
+          model.start_operation('WFC Turbo', true, false, true)
           # Fast iteration. A timer at 0.0 will be slower than a normal loop.
           t = Time.now
           until stopped?
@@ -90,7 +107,7 @@ module Examples
       def update
         log { '' }
         log { 'Update...' }
-        if state.stack.empty?
+        if state.queue.empty?
           unresolved = state.tiles.reject(&:resolved?)
           if unresolved.empty?
             log { 'Generation complete!' }
@@ -105,7 +122,7 @@ module Examples
             tile = touched.min { |a, b| a.entropy <=> b.entropy }
           end
         else
-          tile = state.stack.pop
+          tile = state.queue.pop
         end
         solve_tile(tile)
       rescue
@@ -125,14 +142,13 @@ module Examples
 
       private
 
-      State = Struct.new(:tiles, :stack)
+      STATUSES = [:running, :paused, :stopped]
+
+      State = Struct.new(:tiles, :queue, :status)
       # @!parse
       #   class State
-      #     attr_accessor :tiles, :stack
+      #     attr_accessor :tiles, :queue, :status
       #   end
-
-      # @return [State]
-      attr_reader :state
 
       # @param [Tile]
       def solve_tile(tile)
@@ -149,7 +165,7 @@ module Examples
         }
         unresolved.reject!(&:resolved?) # Reject newly solved tiles
 
-        state.stack.insert(unresolved)
+        state.queue.insert(unresolved)
       end
 
       # @param [Tile]

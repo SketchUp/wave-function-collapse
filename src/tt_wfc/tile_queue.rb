@@ -1,11 +1,9 @@
 module Examples
   module WFC
 
-    # TODO: Rename
-    class UniqQueue
+    class TileQueue
 
-      def initialize(&block)
-        @pop_proc = block
+      def initialize
         @set = Set.new
       end
 
@@ -20,7 +18,7 @@ module Examples
 
       # @return [Object]
       def pop
-        item = @set.min(&@pop_proc)
+        item = @set.min { |a, b| a.entropy <=> b.entropy }
         @set.delete(item)
         item
       end
