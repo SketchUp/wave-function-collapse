@@ -23,12 +23,18 @@ module Examples
       Sketchup.write_default('TT_WFC', 'Seed', seed)
     end
 
+    # SpeedUp.profile { Examples::WFC.generate(10, 10) }
     def self.prompt_generate
       prompts = ["Width", "Height"]
       defaults = [10, 10]
       input = UI.inputbox(prompts, defaults, "Generate World")
       return unless input
 
+      width, height = input
+      self.generate(width, height)
+    end
+
+    def self.generate(width, height)
       # Use only selected tiles if any are selected.
       model = Sketchup.active_model
       tile_tag = model.layers['Tiles']
@@ -41,7 +47,6 @@ module Examples
 
       @generator&.stop
       # Start the generation
-      width, height = input
       seed = Sketchup.read_default('TT_WFC', 'Seed', nil)
       @generator = WorldGenerator.new(width, height, tile_definitions, seed: seed)
 
