@@ -27,10 +27,16 @@ module Examples
       # @return [State]
       attr_reader :state
 
+      # @return [Integer]
+      attr_reader :seed
+
       # @param [Integer] width
       # @param [Integer] height
       # @param [Array<TileDefinition>] definitions
-      def initialize(width, height, definitions)
+      # @param [Integer] seed
+      def initialize(width, height, definitions, seed: nil)
+        @seed = seed || Random.new_seed
+        @random = Random.new(@seed)
         @width = width
         @height = height
         @definitions = definitions # Tile Definitions
@@ -60,7 +66,7 @@ module Examples
 
       def stop
         pause
-        @state.status = :stopped
+        @state.status = :stopped if @state
         Sketchup.active_model.commit_operation
       end
 
@@ -79,7 +85,7 @@ module Examples
       def pause
         UI.stop_timer(@timer) if @timer
         @timer = nil
-        @state.status = :paused
+        @state.status = :paused if @state
       end
 
       def resume
@@ -117,7 +123,7 @@ module Examples
 
           touched = unresolved.reject(&:untouched?)
           if touched.empty?
-            tile = unresolved.sample
+            tile = sample(unresolved)
           else
             tile = touched.min { |a, b| a.entropy <=> b.entropy }
           end
@@ -154,7 +160,7 @@ module Examples
       def solve_tile(tile)
         raise 'already resolved' if tile.resolved?
 
-        possibility = tile.possibilities.sample
+        possibility = sample(tile.possibilities)
         log { "Sampled #{tile} for #{tile.possibilities.size} possibilities." }
         tile.resolve_to(possibility)
         unresolved = neighbors(tile).reject(&:resolved?)
@@ -166,6 +172,13 @@ module Examples
         unresolved.reject!(&:resolved?) # Reject newly solved tiles
 
         state.queue.insert(unresolved)
+      end
+
+      # @param [Enumerable] enumerable
+      # @param [Object]
+      def sample(enumerable)
+        index = @random.rand(enumerable.size)
+        enumerable[index]
       end
 
       # @param [Tile]

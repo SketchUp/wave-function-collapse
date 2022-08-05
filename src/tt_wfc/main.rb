@@ -6,6 +6,18 @@ require 'tt_wfc/world_generator'
 module Examples
   module WFC
 
+    def self.prompt_set_generator_seed
+      seed = Sketchup.read_default('TT_WFC', 'Seed', 0)
+
+      prompts = ["Seed (0 = Random)"]
+      defaults = [seed]
+      input = UI.inputbox(prompts, defaults, "Set Generator Seed")
+      return unless input
+
+      seed = input[0]
+      Sketchup.write_default('TT_WFC', 'Seed', seed)
+    end
+
     def self.prompt_generate
       prompts = ["Width", "Height"]
       defaults = [10, 10]
@@ -25,7 +37,12 @@ module Examples
       @generator&.stop
       # Start the generation
       width, height = input
-      @generator = WorldGenerator.new(width, height, tile_definitions)
+      seed = Sketchup.read_default('TT_WFC', 'Seed', nil)
+      @generator = WorldGenerator.new(width, height, tile_definitions, seed: seed)
+
+      puts
+      puts "Generator seed: #{@generator.seed}"
+
       @generator.run(start_paused: self.start_paused?)
     end
 
@@ -187,6 +204,14 @@ module Examples
       cmd.large_icon = self.icon('step')
       cmd_step = cmd
 
+      cmd = UI::Command.new('Set Generator Seed') {
+        self.prompt_set_generator_seed
+      }
+      cmd.tooltip = cmd.menu_text
+      cmd.small_icon = self.icon('random')
+      cmd.large_icon = self.icon('random')
+      cmd_seed = cmd
+
       # Menus
       menu = UI.menu('Plugins').add_submenu('Wave Function Collapse')
       menu.add_item(cmd_generate_world)
@@ -196,6 +221,7 @@ module Examples
       menu.add_separator
       menu.add_item(cmd_step)
       menu.add_item(cmd_toggle_start_paused)
+      menu.add_item(cmd_seed)
       # menu.add_separator
       # menu.add_item(cmd_decrease_speed)
       # menu.add_item(cmd_increase_speed)
@@ -216,6 +242,7 @@ module Examples
       toolbar.add_separator
       toolbar.add_item(cmd_step)
       toolbar.add_item(cmd_toggle_start_paused)
+      toolbar.add_item(cmd_seed)
       # toolbar.add_separator
       # toolbar.add_item(cmd_decrease_speed)
       # toolbar.add_item(cmd_increase_speed)
