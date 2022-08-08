@@ -224,7 +224,7 @@ module Examples
         raise "'Tiles' tag not found" if tile_tag.nil?
 
         instances = model.entities.grep(Sketchup::ComponentInstance).select { |instance|
-          instance.layer = tile_tag
+          instance.layer == tile_tag
         }
         instances.map { |instance| TileDefinition.new(instance) }
       end

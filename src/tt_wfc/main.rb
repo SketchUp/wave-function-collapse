@@ -41,9 +41,12 @@ module Examples
       raise "'Tiles' tag not found" if tile_tag.nil?
       source = model.selection.empty? ? model.entities : model.selection
       instances = source.grep(Sketchup::ComponentInstance).select { |instance|
-        instance.layer = tile_tag
+        instance.layer == tile_tag
       }
-      tile_definitions = instances.map { |instance| TileDefinition.new(instance) }
+      tile_definitions = instances.map { |instance|
+        weight = instance.definition.get_attribute('tt_wfc', 'weight', 1)
+        TileDefinition.new(instance, weight: weight)
+      }
 
       @generator&.stop
       # Start the generation
