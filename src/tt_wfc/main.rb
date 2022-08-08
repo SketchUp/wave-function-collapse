@@ -87,6 +87,31 @@ module Examples
       @generator&.update
     end
 
+    def self.prompt_assign_weight
+      model = Sketchup.active_model
+      instances = model.selection.grep(Sketchup::ComponentInstance)
+      definitions = instances.map(&:definition)
+      return if definitions.empty?
+
+      default = 1
+      if definitions.size == 1
+        default = definitions[0].get_attribute('tt_wfc', 'weight', 1)
+      end
+
+      prompts = ["Weight"]
+      defaults = [default]
+      input = UI.inputbox(prompts, defaults, "Assign Weight")
+      return unless input
+
+      weight = input[0]
+
+      model.start_operation('Assign Weight', true)
+      definitions.each { |definition|
+        definition.set_attribute('tt_wfc', 'weight', weight)
+      }
+      model.commit_operation
+    end
+
     def self.prompt_load_assets
       directory = UI.select_directory(
         title: "Select Asset Directory",
@@ -222,6 +247,14 @@ module Examples
       cmd.large_icon = self.icon('random')
       cmd_seed = cmd
 
+      cmd = UI::Command.new('Assign Weight') {
+        self.prompt_assign_weight
+      }
+      cmd.tooltip = cmd.menu_text
+      cmd.small_icon = self.icon('weight')
+      cmd.large_icon = self.icon('weight')
+      cmd_weight = cmd
+
       # Menus
       menu = UI.menu('Plugins').add_submenu('Wave Function Collapse')
       menu.add_item(cmd_generate_world)
@@ -239,6 +272,7 @@ module Examples
       menu.add_item('Tile Tool') {
         self.activate_tile_tool
       }
+      menu.add_item(cmd_weight)
       menu.add_item('Load Assets') {
         self.prompt_load_assets
       }
@@ -253,6 +287,8 @@ module Examples
       toolbar.add_item(cmd_step)
       toolbar.add_item(cmd_toggle_start_paused)
       toolbar.add_item(cmd_seed)
+      toolbar.add_separator
+      toolbar.add_item(cmd_weight)
       # toolbar.add_separator
       # toolbar.add_item(cmd_decrease_speed)
       # toolbar.add_item(cmd_increase_speed)

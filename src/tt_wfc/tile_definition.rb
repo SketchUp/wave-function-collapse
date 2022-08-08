@@ -104,12 +104,17 @@ module Examples
       # @return [Sketchup::ComponentInstance]
       attr_reader :instance
 
+      # @return [Integer]
+      attr_reader :weight
+
       # @return [Array<TileDefinition::ConnectionPoint>]
       attr_reader :connections
 
       # @param [Sketchup::ComponentInstance] instance
-      def initialize(instance)
+      # @param [Integer] weight
+      def initialize(instance, weight: 1)
         @instance = instance
+        @weight = weight
         @connections = CONNECTION_IDS.map { |connection_id|
           ConnectionPoint.new(self, connection_id)
         }

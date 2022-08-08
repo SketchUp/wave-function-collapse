@@ -15,7 +15,7 @@ module Examples
       # @return [Geom::Point3d] position
       attr_reader :position
 
-      # @return [Array<TileDefinition>] possibilities
+      # @return [Array<Possibility>] possibilities
       attr_reader :possibilities
 
       # @param [WorldGenerator] world
@@ -59,7 +59,7 @@ module Examples
           # @possibilities.delete(possibility)
           warn "#{self} unable to remove possibility" if @possibilities.delete(possibility).nil?
         }
-        raise "#{self} failed to resolve" if failed?
+        raise "#{self} failed to resolve after removing #{possibilities.size} possibilities" if failed?
         # p [:possibilities, :after, @possibilities.size, entropy]
         update
       end

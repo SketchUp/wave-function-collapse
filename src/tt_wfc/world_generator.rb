@@ -4,7 +4,13 @@ require 'tt_wfc/tile_queue'
 module Examples
   module WFC
 
-    Possibility = Struct.new(:definition, :edges, :transformation)
+    Possibility = Struct.new(:definition, :edges, :transformation) do
+
+      def weight
+        definition.weight
+      end
+
+    end
     # @!parse
     #   class Possibility
     #     attr_accessor :definition, :edges, :transformation
@@ -166,7 +172,7 @@ module Examples
         # If a tile was resolved as a result of constraints it's neighbors needs
         # to be processed.
         unless tile.resolved?
-          possibility = sample(tile.possibilities)
+          possibility = weighted_sample(tile.possibilities)
           log { "Sampled #{tile} for #{tile.possibilities.size} possibilities. (#{tile.instance.persistent_id})" }
           tile.resolve_to(possibility)
         end
@@ -194,6 +200,40 @@ module Examples
       def sample(enumerable)
         index = @random.rand(enumerable.size)
         enumerable[index]
+      end
+
+      # @param [Enumerable] enumerable
+      # @param [Object]
+      def weighted_sample(enumerable)
+        # https://robertheaton.com/2018/12/17/wavefunction-collapse-algorithm/
+        #
+        # Sums are over the weights of each remaining
+        # allowed tile type for the square whose
+        # entropy we are calculating.
+        #     shannon_entropy_for_square =
+        #       log(sum(weight)) -
+        #       (sum(weight * log(weight)) / sum(weight))
+        #
+        # https://github.com/mxgmn/WaveFunctionCollapse/blob/a6f79f0f1a4220406220782b71d3fcc73a24a4c2/Model.cs#L55-L67
+        # sum_weight = enumerable.sum(&:weight).to_f
+        # sum_times_log_weight = enumerable.sum { |w| w * Math.log(w) }
+        # sum_weight - (sum_times_log_weight / sum_weight)
+        # ... ?
+
+        # Alternative:
+        sum_weight = enumerable.sum(&:weight)
+        value = @random.rand(sum_weight)
+        # x = enumerable.find.with_object(0) { |n, w|
+        #   w += n.weight
+        #   w > value
+        # }
+        # p [:x, x]
+        # x
+        w = 0
+        enumerable.find { |n|
+          w += n.weight
+          w > value
+        }
       end
 
       # @param [Tile]
