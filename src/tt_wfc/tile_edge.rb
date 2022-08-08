@@ -55,6 +55,15 @@ module Examples
         deserialize_symmetric
       end
 
+      # @param [TileEdge] other
+      def can_connect_to?(other)
+        if symmetrical?
+          type == other.type
+        else
+          type == other.type && reversed? != other.reversed?
+        end
+      end
+
       # @return [Geom::Point3d]
       def position
         if @last_transformation_origin.nil? ||

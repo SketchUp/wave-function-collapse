@@ -50,7 +50,6 @@ module Examples
         @height = height
         @definitions = definitions # Tile Definitions
         @possibilities = generate_possibilities(definitions)
-        @connections = generate_connections(definitions)
         puts JSON.pretty_generate(@connections)
         @materials = generate_entropy_materials(@possibilities.size)
         @state = nil
@@ -252,7 +251,7 @@ module Examples
 
           invalid = tile.possibilities.reject { |possibility|
             constrainer.possibilities.any? { |cp|
-              possibility.edges[i1] == cp.edges[i2]
+              possibility.edges[i1].can_connect_to?(cp.edges[i2])
             }
           }
           before = tile.possibilities.size
@@ -261,6 +260,13 @@ module Examples
           constrained += invalid.size
         }
         constrained
+      end
+
+      # @param [Tile] tile1
+      # @param [String] edge_type1
+      # @param [Tile] tile2
+      # @param [String] edge_type2
+      def edges_can_connect?(tile1, edge_type1, tile2, edge_type2)
       end
 
       # @param [Array<Tile>] tiles
@@ -346,7 +352,8 @@ module Examples
       def generate_possibilities(definitions)
         result = []
         definitions.each { |definition|
-          edges = definition.edges.map(&:type)
+          # edges = definition.edges.map(&:type)
+          edges = definition.edges.dup
           4.times { |i|
             # :north, :east, :south, :west
             # --------------------
@@ -363,47 +370,6 @@ module Examples
             # tr = -270
             tr = Geom::Transformation.rotation(ORIGIN, Z_AXIS, 90.degrees * i)
             result << Possibility.new(definition, edges.rotate(i), tr)
-          }
-        }
-        result
-      end
-
-      # connections = {
-      #   edge_type: { edge_id: Set<:edge_id> }
-      # }
-      #
-      # @param [Array<TileDefinition>] definitions
-      # @return [Hash]
-      def generate_connections(definitions)
-        model = Sketchup.active_model
-        combination_tag = model.layers['Combinations']
-
-        su_defs = definitions.map { |tile_def| tile_def.instance.definition }.uniq
-
-        source = model.entities
-        instances = source.grep(Sketchup::ComponentInstance).select { |instance|
-          instance.layer == combination_tag && su_defs.include?(instance.definition)
-        }
-
-        tiles = instances.map { |instance|
-          TileDefinition.new(instance)
-        }
-
-        result = {}
-        tiles.each { |tile|
-          tile.edges.each { |edge|
-            tiles.each { |other_tile|
-              next if other_tile == tile
-
-              other_tile.edges.each { |other_edge|
-                next if other_edge.type == edge.type
-                next unless other_edge.position == edge.position
-
-                result[edge.type] ||= Hash.new
-                result[edge.type][edge.edge_id] ||= Set.new
-                result[edge.type][edge.edge_id] << [other_edge.type, other_edge.edge_id]
-              }
-            }
           }
         }
         result
