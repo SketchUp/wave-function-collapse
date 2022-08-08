@@ -164,10 +164,6 @@ module Examples
         view.line_width = 2
         view.draw_points(ass_points, 12, DRAW_FILLED_SQUARE, 'black') unless ass_points.empty?
         view.draw_points(una_points, 12, DRAW_FILLED_SQUARE, 'red') unless una_points.empty?
-        # view.draw_points(nil_points, 12, DRAW_FILLED_SQUARE, 'red') unless nil_points.empty?
-        # view.draw_points(ntr_points, 12, DRAW_FILLED_SQUARE, 'purple') unless ntr_points.empty?
-        # view.draw_points(rev_points, 12, DRAW_FILLED_SQUARE, 'maroon') unless rev_points.empty?
-        # view.draw_points(nil_points, 12, DRAW_FILLED_SQUARE, 'red') unless nil_points.empty?
         draw_symmetry_annotation(view, ntr_points, false, 12)
         draw_symmetry_annotation(view, rev_points, true, 12)
         # (Cross-hairs)
