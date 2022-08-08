@@ -70,7 +70,7 @@ module Examples
         # @param [Symbol] edge_id
         # @return [Geom::Point3d]
         def edge_position(instance, edge_id)
-          bb = instance.bounds
+          bb = instance.definition.bounds
           case edge_id
           when :north
             i1 = BB_LEFT_BACK_BOTTOM
@@ -91,7 +91,7 @@ module Examples
           pt2 = bb.corner(i2)
           pt = Geom.linear_combination(0.5, pt1, 0.5, pt2)
           pt.z = 0.0
-          pt
+          pt.transform(instance.transformation)
         end
 
       end
