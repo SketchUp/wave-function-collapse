@@ -124,6 +124,8 @@ module Examples
         log { '' }
         log { 'Update...' }
         if state.queue.empty?
+          # All waves from previous resolve is processed. Pick a new tile.
+          log { '> Pick new...' }
           unresolved = state.tiles.reject(&:resolved?)
           if unresolved.empty?
             log { 'Generation complete!' }
@@ -133,14 +135,23 @@ module Examples
 
           touched = unresolved.reject(&:untouched?)
           if touched.empty?
+            # First time picking a tile, pick one at random.
+            # Can this be done as part of setup? (Avoid this branch)
+            log { '> Sample random...' }
             tile = sample(unresolved)
           else
+            # Pick the tile with least entropy, as that will increase the chance
+            # of successfully solving the tile.
+            log { '> Pick by least entropy...' }
             tile = touched.min { |a, b| a.entropy <=> b.entropy }
           end
+          solve_tile(tile)
         else
+          # This is the wave propagation branch.
+          log { '> Next in queue...' }
           tile = state.queue.pop
+          propagate(tile)
         end
-        solve_tile(tile)
       rescue
         pause
         raise
@@ -180,7 +191,10 @@ module Examples
           log { "Sampled #{tile} for #{tile.possibilities.size} possibilities. (#{tile.instance.persistent_id})" }
           tile.resolve_to(possibility)
         end
+        propagate(tile)
+      end
 
+      def propagate(tile)
         # Once a tile is resolved all it's neighbors needs to be evaluated.
         # If any of those change their neighbors also needs to be evaluated.
         # The unresolved neighbors are constrained in the order of least
@@ -227,12 +241,6 @@ module Examples
         # Alternative:
         sum_weight = enumerable.sum(&:weight)
         value = @random.rand(sum_weight)
-        # x = enumerable.find.with_object(0) { |n, w|
-        #   w += n.weight
-        #   w > value
-        # }
-        # p [:x, x]
-        # x
         w = 0
         enumerable.find { |n|
           w += n.weight
