@@ -258,6 +258,14 @@ module Examples
       cmd.large_icon = self.icon('weight')
       cmd_weight = cmd
 
+      cmd = UI::Command.new('Tile Tools') {
+        self.activate_tile_tool
+      }
+      cmd.tooltip = cmd.menu_text
+      cmd.small_icon = self.icon('tag')
+      cmd.large_icon = self.icon('tag')
+      cmd_tile_tool = cmd
+
       # Menus
       menu = UI.menu('Plugins').add_submenu('Wave Function Collapse')
       menu.add_item(cmd_generate_world)
@@ -272,9 +280,7 @@ module Examples
       # menu.add_item(cmd_decrease_speed)
       # menu.add_item(cmd_increase_speed)
       menu.add_separator
-      menu.add_item('Tile Tool') {
-        self.activate_tile_tool
-      }
+      menu.add_item(cmd_tile_tool)
       menu.add_item(cmd_weight)
       menu.add_item('Load Assets') {
         self.prompt_load_assets
@@ -291,6 +297,7 @@ module Examples
       toolbar.add_item(cmd_toggle_start_paused)
       toolbar.add_item(cmd_seed)
       toolbar.add_separator
+      toolbar.add_item(cmd_tile_tool)
       toolbar.add_item(cmd_weight)
       # toolbar.add_separator
       # toolbar.add_item(cmd_decrease_speed)
