@@ -341,7 +341,7 @@ module Examples
       def generate_possibilities(definitions)
         result = []
         definitions.each { |definition|
-          edges = definition.connections.map(&:type)
+          edges = definition.edges.map(&:type)
           4.times { |i|
             # :north, :east, :south, :west
             # --------------------
@@ -361,6 +361,21 @@ module Examples
           }
         }
         result
+      end
+
+      # @return [Hash<Symbol, Array<Symbol>>]
+      def generate_connections
+        model = Sketchup.active_model
+        combination_tag = model.layers['Combinations']
+
+        source = model.entities
+        instances = source.grep(Sketchup::ComponentInstance).select { |instance|
+          instance.layer == combination_tag
+        }
+
+        tiles = instances.map { |instance|
+          TileDefinition.new(instance)
+        }
       end
 
       # @param [Integer] max_entropy

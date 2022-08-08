@@ -13,10 +13,10 @@ module Examples
       def initialize
         @tiles = load_tiles
 
-        # @type [Set<TileDefinition::ConnectionPoint>]
+        # @type [Set<TileDefinition::TileEdge>]
         @selection = Set.new
 
-        # @type [TileDefinition::ConnectionPoint, nil]
+        # @type [TileDefinition::TileEdge, nil]
         @mouse_over = nil
 
         # @type [Geom::Point3d, nil]
@@ -53,7 +53,7 @@ module Examples
       # @param [Sketchup::View] view
       def onMouseMove(flags, x, y, view)
         @mouse_position = Geom::Point3d.new(x, y)
-        @mouse_over = pick_connection(view, x, y)
+        @mouse_over = pick_edge(view, x, y)
 
         type = @mouse_over ? @mouse_over.type || '<unassigned>' : nil
         view.tooltip = "Type: #{type}" if type
@@ -69,7 +69,7 @@ module Examples
         @mouse_left_button_down = Geom::Point3d.new(x, y)
         @mouse_drag = false
 
-        select_connection(flags, x, y, view)
+        select_edge(flags, x, y, view)
         view.invalidate
       end
 
@@ -89,18 +89,18 @@ module Examples
       # @param [Sketchup::View] view
       def getMenu(menu, flags, x, y, view)
         unless @selection.empty?
-          menu.add_item('Assign Connection Type') do
+          menu.add_item('Assign Edge Type') do
             prompt_assign_connection_type_to_selection
           end
           menu.add_separator
         end
-        menu.add_item('Add Connection Type') do
+        menu.add_item('Add Edge Type') do
           prompt_add_connection_type
         end
         # menu.add_item('Remove Connection Type') do
         #   prompt_remove_connection_type
         # end
-        menu.add_item('Edit Connection Type') do
+        menu.add_item('Edit Edge Type') do
           prompt_edit_connection_type
         end
       end
@@ -109,16 +109,16 @@ module Examples
       def draw(view)
         view.line_stipple = ''
 
-        # Draw connections points.
+        # Draw edges points.
         # (Backgrounds)
-        points = @tiles.flat_map(&:connection_points)
+        points = @tiles.flat_map(&:edge_midpoints)
         view.line_width = 2
         view.draw_points(points, 12, DRAW_FILLED_SQUARE, 'black')
         # (Cross-hairs)
         connection_types = get_connection_types(view.model)
         connection_colors = Hash[connection_types.map { |t| [t.type_id, t.color] }]
-        connections = @tiles.flat_map(&:connections)
-        connections.sort_by { |c| c.type || '' }.chunk { |c| c.type || '' }.each { |type_id, items|
+        edges = @tiles.flat_map(&:edges)
+        edges.sort_by { |c| c.type || '' }.chunk { |c| c.type || '' }.each { |type_id, items|
           color = connection_colors[type_id] || 'white'
           pts = items.map(&:position)
           view.draw_points(pts, 10, DRAW_PLUS, color)
@@ -173,8 +173,8 @@ module Examples
       # @param [Integer] x
       # @param [Integer] y
       # @param [Sketchup::View] view
-      def select_connection(flags, x, y, view)
-        picked = pick_connection(view, x, y)
+      def select_edge(flags, x, y, view)
+        picked = pick_edge(view, x, y)
         selection_type = selection_state(flags)
         @selection.clear if selection_type == SELECT_SINGLE
         return if picked.nil?
@@ -202,13 +202,13 @@ module Examples
       # @param [Sketchup::View] view
       # @param [Integer] x
       # @param [Integer] y
-      # @return [Tile::ConnectionPoint, nil]
-      def pick_connection(view, x, y)
+      # @return [Tile::TileEdge, nil]
+      def pick_edge(view, x, y)
         ph = view.pick_helper(x, y, APERTURE)
 
         connection = nil
         @tiles.each { |tile|
-          connection = tile.connections.find { |connection|
+          connection = tile.edges.find { |connection|
             picked = ph.test_point(connection.position)
           }
           break if connection
@@ -303,13 +303,13 @@ module Examples
         model = Sketchup.active_model
         model.start_operation('Add Connection Type', true)
         edit_connection_type(model, type_id, ConnectionType.new(type, color))
-        rename_connection_ids(model, type_id, type)
+        rename_edge_ids(model, type_id, type)
         model.commit_operation
       end
 
-      def rename_connection_ids(model, old_type_id, new_type_id)
+      def rename_edge_ids(model, old_type_id, new_type_id)
         @tiles.each { |tile|
-          tile.connections.each { |connection|
+          tile.edges.each { |connection|
             next unless connection.type == old_type_id
 
             connection.type = new_type_id

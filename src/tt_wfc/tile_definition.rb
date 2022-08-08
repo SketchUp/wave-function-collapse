@@ -5,7 +5,7 @@ module Examples
 
     class TileDefinition
 
-      class ConnectionPoint
+      class TileEdge
 
         include BoundingBoxConstants
 
@@ -13,17 +13,17 @@ module Examples
         attr_reader :tile
 
         # @return [Symbol]
-        attr_reader :connection_id
+        attr_reader :edge_id
 
         # @return [String]
         attr_reader :type
 
         # @param [TileDefinition] tile
-        # @param [Symbol] connection_id
+        # @param [Symbol] edge_id
         # @param [Geom::Point3d] position
-        def initialize(tile, connection_id)
+        def initialize(tile, edge_id)
           @tile = tile
-          @connection_id = connection_id
+          @edge_id = edge_id
           @type = deserialize(tile.instance)
           @position = nil # Lazily computed.
           # Cache what instance transformation was used to compute the position.
@@ -40,7 +40,7 @@ module Examples
         def position
           if @last_transformation_origin.nil? ||
               @last_transformation_origin != tile.instance.transformation.origin
-            @position = connection_position(tile.instance, connection_id)
+            @position = edge_position(tile.instance, edge_id)
             @last_transformation_origin = tile.instance.transformation.origin
           end
           @position
@@ -48,7 +48,7 @@ module Examples
 
         # @return [String]
         def to_s
-          "#{@tile}:#{@connection_id}"
+          "#{@tile}:#{@edge_id}"
         end
         alias inspect to_s
 
@@ -58,20 +58,20 @@ module Examples
 
         # @param [Sketchup::ComponentInstance] instance
         def serialize(instance)
-          instance.definition.set_attribute(SECTION_ID, @connection_id.to_s, @type)
+          instance.definition.set_attribute(SECTION_ID, @edge_id.to_s, @type)
         end
 
         # @param [Sketchup::ComponentInstance] instance
         def deserialize(instance)
-          instance.definition.get_attribute(SECTION_ID, @connection_id.to_s, nil)
+          instance.definition.get_attribute(SECTION_ID, @edge_id.to_s, nil)
         end
 
         # @param [Sketchup::ComponentInstance] instance
-        # @param [Symbol] connection_id
+        # @param [Symbol] edge_id
         # @return [Geom::Point3d]
-        def connection_position(instance, connection_id)
+        def edge_position(instance, edge_id)
           bb = instance.bounds
-          case connection_id
+          case edge_id
           when :north
             i1 = BB_LEFT_BACK_BOTTOM
             i2 = BB_RIGHT_BACK_BOTTOM
@@ -85,7 +85,7 @@ module Examples
             i1 = BB_LEFT_FRONT_BOTTOM
             i2 = BB_LEFT_BACK_BOTTOM
           else
-            raise "invalid connection ID: #{connection_id}"
+            raise "invalid edge ID: #{edge_id}"
           end
           pt1 = bb.corner(i1)
           pt2 = bb.corner(i2)
@@ -97,7 +97,7 @@ module Examples
       end
 
       # NOTE: It's important the order is clockwise.
-      CONNECTION_IDS = [
+      EDGE_IDS = [
         :north, :east, :south, :west
       ]
 
@@ -107,22 +107,22 @@ module Examples
       # @return [Integer]
       attr_reader :weight
 
-      # @return [Array<TileDefinition::ConnectionPoint>]
-      attr_reader :connections
+      # @return [Array<TileDefinition::TileEdge>]
+      attr_reader :edges
 
       # @param [Sketchup::ComponentInstance] instance
       # @param [Integer] weight
       def initialize(instance, weight: 1)
         @instance = instance
         @weight = weight
-        @connections = CONNECTION_IDS.map { |connection_id|
-          ConnectionPoint.new(self, connection_id)
+        @edges = EDGE_IDS.map { |edge_id|
+          TileEdge.new(self, edge_id)
         }
       end
 
       # @return [Array<Geom::Point3d>]
-      def connection_points
-        connections.map(&:position)
+      def edge_midpoints
+        edges.map(&:position)
       end
 
       # @return [String]
