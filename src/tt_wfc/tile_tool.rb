@@ -56,7 +56,15 @@ module Examples
         @mouse_over = pick_edge(view, x, y)
 
         type = @mouse_over ? @mouse_over.type || '<unassigned>' : nil
-        view.tooltip = "Type: #{type}" if type
+
+        if type
+          tooltip = "Type: #{type}"
+          unless @mouse_over.symmetrical?
+            tooltip << ", Asymmetrical"
+            tooltip << " (Reversed)" if @mouse_over.reversed?
+          end
+          view.tooltip = tooltip
+        end
 
         view.invalidate
       end
@@ -97,12 +105,46 @@ module Examples
         menu.add_item('Add Edge Type') do
           prompt_add_connection_type
         end
-        # menu.add_item('Remove Connection Type') do
-        #   prompt_remove_connection_type
-        # end
+        menu.add_item('Remove Edge Type') do
+          prompt_remove_connection_type
+        end
         menu.add_item('Edit Edge Type') do
           prompt_edit_connection_type
         end
+      end
+
+      def draw_symmetry_annotation(view, points, reversed, size)
+        return if points.empty?
+
+        half = size / 2
+        symbol_points = if reversed
+          # ¡
+          [
+            Geom::Point3d.new(0, -half, 0),
+            Geom::Point3d.new(0, -half+2, 0),
+            Geom::Point3d.new(0, -half+3, 0),
+            Geom::Point3d.new(0, half, 0),
+          ]
+        else
+          # !
+          [
+            Geom::Point3d.new(0, -half, 0),
+            Geom::Point3d.new(0, half-3, 0),
+            Geom::Point3d.new(0, half-2, 0),
+            Geom::Point3d.new(0, half, 0),
+          ]
+        end
+        offset = Geom::Point3d.new(-(half + 3), 0, 0) # (12 / 2) - 3
+        pts = points.flat_map { |point|
+          x, y, z = view.screen_coords(point).to_a.map(&:to_i)
+          screen_pt = Geom::Point3d.new(x, y, z)
+          tr = Geom::Transformation.new(screen_pt + offset.to_a)
+          symbol_points.map { |pt| pt.transform(tr) }
+        }
+        view.drawing_color = 'black'
+        view.line_width = 2
+        view.line_stipple = ''
+        view.draw2d(GL_LINES, pts)
       end
 
       # @param [Sketchup::View] view
@@ -111,10 +153,25 @@ module Examples
 
         # Draw edges points.
         # (Backgrounds)
-        points = @tiles.flat_map(&:edge_midpoints)
+        assigned, unassigned = @tiles.flat_map(&:edges).partition(&:assigned?)
+        symmetrical, asymmetrical = assigned.partition(&:symmetrical?)
+        sym_points = symmetrical.flat_map(&:position)
+        reversed, not_reversed = asymmetrical.partition(&:reversed?)
+        ntr_points = not_reversed.flat_map(&:position)
+        rev_points = reversed.flat_map(&:position)
+        ass_points = assigned.flat_map(&:position)
+        una_points = unassigned.flat_map(&:position)
         view.line_width = 2
-        view.draw_points(points, 12, DRAW_FILLED_SQUARE, 'black')
+        view.draw_points(ass_points, 12, DRAW_FILLED_SQUARE, 'black') unless ass_points.empty?
+        view.draw_points(una_points, 12, DRAW_FILLED_SQUARE, 'red') unless una_points.empty?
+        # view.draw_points(nil_points, 12, DRAW_FILLED_SQUARE, 'red') unless nil_points.empty?
+        # view.draw_points(ntr_points, 12, DRAW_FILLED_SQUARE, 'purple') unless ntr_points.empty?
+        # view.draw_points(rev_points, 12, DRAW_FILLED_SQUARE, 'maroon') unless rev_points.empty?
+        # view.draw_points(nil_points, 12, DRAW_FILLED_SQUARE, 'red') unless nil_points.empty?
+        draw_symmetry_annotation(view, ntr_points, false, 12)
+        draw_symmetry_annotation(view, rev_points, true, 12)
         # (Cross-hairs)
+        view.line_width = 2
         connection_types = get_connection_types(view.model)
         connection_colors = Hash[connection_types.map { |t| [t.type_id, t.color] }]
         edges = @tiles.flat_map(&:edges)
@@ -123,7 +180,6 @@ module Examples
           pts = items.map(&:position)
           view.draw_points(pts, 10, DRAW_PLUS, color)
         }
-        # view.draw_points(points, 10, DRAW_PLUS, 'white')
 
         # Draw selected connection point.
         unless @selection.empty?
@@ -232,14 +288,15 @@ module Examples
       ATTR_DICT = 'tt_wfc'
       ATTR_TYPES = 'connection_types'
 
-      ConnectionType = Struct.new(:type_id, :color)
+      ConnectionType = Struct.new(:type_id, :color, :symmetrical)
 
       # @param [Sketchup::Model] model
       # @return [Array<ConnectionType>]
       def get_connection_types(model)
         model.get_attribute(ATTR_DICT, ATTR_TYPES, []).map { |data|
-          type_id, color = data
-          ConnectionType.new(type_id, color)
+          type_id, color, symmetrical = data
+          symmetrical = true if symmetrical.nil?
+          ConnectionType.new(type_id, color, symmetrical)
         }
       end
 
@@ -254,33 +311,61 @@ module Examples
       end
 
       # @param [Sketchup::Model] model
+      # @param [String] existing_type_id
       # @param [ConnectionType] type
       def edit_connection_type(model, existing_type_id, type)
         raise unless type.is_a?(ConnectionType)
         types = get_connection_types(model)
         raise ArgumentError, "#{existing_type_id} doesn't exist" if types.none? { |t| t[0] == existing_type_id }
-        raise ArgumentError, "#{type[0]} already exist" if types.any? { |t| t[0] == type[0] }
+        raise ArgumentError, "#{type[0]} already exist" if existing_type_id != type.type_id && types.any? { |t| t[0] == type[0] }
         i = types.index { |t| t[0] == existing_type_id }
         types[i] = type
+        p [:edit_connection_type, types.map(&:to_a)]
         model.set_attribute(ATTR_DICT, ATTR_TYPES, types.map(&:to_a))
       end
 
-      def prompt_connection_type(title, id: 'connection-id', color: Sketchup::Color.names.sample)
-        prompts = ['Connection ID', 'Color']
-        defaults = [id, color]
-        list = ['', Sketchup::Color.names.join('|')]
-        UI.inputbox(prompts, defaults, list, title)
+      # @param [Sketchup::Model] model
+      # @param [String] existing_type_id
+      def delete_connection_type(model, existing_type_id)
+        types = get_connection_types(model)
+        raise ArgumentError, "#{existing_type_id} doesn't exist" if types.none? { |t| t[0] == existing_type_id }
+        i = types.index { |t| t[0] == existing_type_id }
+        types.delete_at(i)
+        model.set_attribute(ATTR_DICT, ATTR_TYPES, types.map(&:to_a))
+      end
+
+      def prompt_connection_type(title, id: 'connection-id', symmetrical: true, color: Sketchup::Color.names.sample)
+        prompts = ['Connection ID', 'Symmetrical', 'Color']
+        p [:symmetrical, symmetrical]
+        defaults = [id, symmetrical.to_s, color]
+        list = ['', 'true|false', Sketchup::Color.names.join('|')]
+        result = UI.inputbox(prompts, defaults, list, title)
+        result[1] = result[1] == 'true' if result
+        result
       end
 
       def prompt_add_connection_type
         input = prompt_connection_type('Create Connection Type')
         return unless input
 
-        type, color = input
+        type, symmetrical, color = input
 
         model = Sketchup.active_model
         model.start_operation('Add Connection Type', true)
-        add_connection_type(model, ConnectionType.new(type, color))
+        add_connection_type(model, ConnectionType.new(type, color, symmetrical))
+        model.commit_operation
+      end
+
+      def prompt_remove_connection_type
+        input = prompt_pick_connection_type('Remove Connection Type')
+        return unless input
+
+        type_id = input[0]
+
+        model = Sketchup.active_model
+        model.start_operation('Remove Connection Type', true)
+        delete_connection_type(model, type_id)
+        remove_edge_ids(model, type_id)
         model.commit_operation
       end
 
@@ -294,25 +379,41 @@ module Examples
         type_id = input[0]
         type = types.find { |t| t.type_id == type_id }
         color = type.color
+        symmetrical = type.symmetrical
 
-        input = prompt_connection_type('Edit Connection Type', id: type_id, color: color)
+        input = prompt_connection_type('Edit Connection Type',
+          id: type_id,
+          symmetrical: symmetrical,
+          color: color
+        )
         return unless input
 
-        type, color = input
+        p [:prompt_edit_connection_type, input]
+        type, symmetrical, color = input
 
         model = Sketchup.active_model
         model.start_operation('Add Connection Type', true)
-        edit_connection_type(model, type_id, ConnectionType.new(type, color))
-        rename_edge_ids(model, type_id, type)
+        edit_connection_type(model, type_id, ConnectionType.new(type, color, symmetrical))
+        rename_edge_ids(model, type_id, type) if type != type_id
         model.commit_operation
       end
 
       def rename_edge_ids(model, old_type_id, new_type_id)
         @tiles.each { |tile|
-          tile.edges.each { |connection|
-            next unless connection.type == old_type_id
+          tile.edges.each { |edge|
+            next unless edge.type == old_type_id
 
-            connection.type = new_type_id
+            edge.type = new_type_id
+          }
+        }
+      end
+
+      def remove_edge_ids(model, type_id)
+        @tiles.each { |tile|
+          tile.edges.each { |edge|
+            next unless edge.type == type_id
+
+            edge.type = nil
           }
         }
       end
@@ -328,19 +429,36 @@ module Examples
         UI.inputbox(prompts, defaults, list, title)
       end
 
+      def prompt_assign_connection_type(title)
+        model = Sketchup.active_model
+        types = get_connection_types(model)
+        type_ids = types.map(&:first)
+
+        prompts = ['Connection ID', 'Reversed']
+        defaults = [type_ids.sort.first || '', 'false']
+        boolean = 'true|false'
+        list = [type_ids.sort.join('|'), boolean]
+        result = UI.inputbox(prompts, defaults, list, title)
+        result[1] = result[1] == 'true' if result
+        result
+      end
+
       def prompt_assign_connection_type_to_selection
         model = Sketchup.active_model
         types = get_connection_types(model)
 
-        input = prompt_pick_connection_type('Assign Connection Type')
+        input = prompt_assign_connection_type('Assign Connection Type')
         return unless input
 
-        type_id = input[0]
+        type_id, reversed = input
         type = types.find { |t| t.type_id == type_id }
         raise unless type
 
-        @selection.each { |connection|
-          connection.type = type_id
+        @selection.each { |edge|
+          edge.assign(
+            type: type_id,
+            reversed: reversed,
+          )
         }
       end
 

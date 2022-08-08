@@ -144,6 +144,26 @@ module Examples
       model.commit_operation
     end
 
+    def self.update_asset_data
+      model = Sketchup.active_model
+      tile_tag = model.layers['Tiles']
+      raise "'Tiles' tag not found" if tile_tag.nil?
+
+      source = model.selection.empty? ? model.entities : model.selection
+      instances = source.grep(Sketchup::ComponentInstance).select { |instance|
+        instance.layer == tile_tag
+      }
+      model.start_operation('Update Asset Data', true)
+      instances.each { |instance|
+        weight = instance.definition.get_attribute('tt_wfc', 'weight', 1)
+        definition = TileDefinition.new(instance, weight: weight)
+        definition.edges.each { |edge|
+          edge.type = edge.type # Kludge: Forces the edge to serialize.
+        }
+      }
+      model.commit_operation
+    end
+
     def self.activate_tile_tool
       model = Sketchup.active_model
       return if model.nil?
@@ -284,6 +304,9 @@ module Examples
       menu.add_item(cmd_weight)
       menu.add_item('Load Assets') {
         self.prompt_load_assets
+      }
+      menu.add_item('Update Asset Data') {
+        self.update_asset_data
       }
 
       # Toolbar
