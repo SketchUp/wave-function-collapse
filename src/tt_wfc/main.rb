@@ -51,6 +51,7 @@ module Examples
       @generator&.stop
       # Start the generation
       seed = Sketchup.read_default('TT_WFC', 'Seed', nil)
+      seed = nil if seed < 1
       @generator = WorldGenerator.new(width, height, tile_definitions, seed: seed)
 
       puts
