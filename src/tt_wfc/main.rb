@@ -11,6 +11,20 @@ module Examples
       @generator
     end
 
+    def self.prompt_set_speed
+      speed = Sketchup.read_default('TT_WFC', 'Speed', 0.1)
+
+      prompts = ["Speed (seconds)"]
+      defaults = [speed]
+      input = UI.inputbox(prompts, defaults, "Set Iteration Speed")
+      return unless input
+
+      speed = input[0]
+      return UI.beep if speed < 0
+
+      Sketchup.write_default('TT_WFC', 'Speed', speed)
+    end
+
     def self.prompt_set_generator_seed
       seed = Sketchup.read_default('TT_WFC', 'Seed', 0)
 
@@ -296,6 +310,14 @@ module Examples
       cmd.large_icon = self.icon('weight')
       cmd_weight = cmd
 
+      cmd = UI::Command.new('Set Iteration Speed') {
+        self.prompt_set_speed
+      }
+      cmd.tooltip = cmd.menu_text
+      cmd.small_icon = self.icon('speed')
+      cmd.large_icon = self.icon('speed')
+      cmd_speed = cmd
+
       cmd = UI::Command.new('Tile Tools') {
         self.activate_tile_tool
       }
@@ -314,6 +336,7 @@ module Examples
       menu.add_item(cmd_step)
       menu.add_item(cmd_toggle_start_paused)
       menu.add_item(cmd_toggle_break_at_iteration)
+      menu.add_item(cmd_speed)
       menu.add_item(cmd_seed)
       # menu.add_separator
       # menu.add_item(cmd_decrease_speed)
@@ -337,6 +360,7 @@ module Examples
       toolbar.add_separator
       toolbar.add_item(cmd_step)
       toolbar.add_item(cmd_toggle_start_paused)
+      toolbar.add_item(cmd_speed)
       toolbar.add_item(cmd_seed)
       toolbar.add_separator
       toolbar.add_item(cmd_tile_tool)
