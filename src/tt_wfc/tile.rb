@@ -30,6 +30,7 @@ module Examples
         x = index - (y * world.width)
         @position = Geom::Point3d.new(x, y, 0)
 
+        # TODO: Refactor out the `world` dependency.
         @possibilities = world.possibilities.dup
       end
 
@@ -42,8 +43,12 @@ module Examples
         entropy == 1
       end
 
+      def unresolved?
+        entropy > 1
+      end
+
       def failed?
-        entropy.zero?
+        entropy == 0
       end
 
       def untouched?

@@ -142,7 +142,8 @@ module Examples
             # Pick the tile with least entropy, as that will increase the chance
             # of successfully solving the tile.
             log { '> Pick by least entropy...' }
-            tile = touched.min { |a, b| a.entropy <=> b.entropy }
+            # tile = touched.min { |a, b| a.entropy <=> b.entropy }
+            tile = sample_by_least_entropy(state.tiles)
           end
           solve_tile(tile)
         else
@@ -223,7 +224,31 @@ module Examples
       # @param [Enumerable] enumerable
       # @param [Object]
       def weighted_sample(enumerable)
+        # https://github.com/robert/wavefunction-collapse/blob/21b2e5d95ec7db6057382bfb61ba4557cdd436f4/main.py#L258
+        sum_weight = enumerable.sum(&:weight)
+        value = @random.rand(sum_weight)
+        w = 0
+        enumerable.find { |n|
+          w += n.weight
+          w > value # TODO: Review
+        }
+      end
+
+      # @param [Array<Tile>] tiles
+      def sample_by_least_entropy(tiles)
+        unresolved = tiles.select(&:unresolved?)
+        cache = unresolved.map { |tile|
+          e = shannon_entropy(tile.possibilities)
+          [tile, e]
+        }
+        # 0 = tile
+        # 1 = weight
+        cache.min { |a, b| a[1] <=> b[1] }[0]
+      end
+
+      def shannon_entropy(enumerable)
         # https://robertheaton.com/2018/12/17/wavefunction-collapse-algorithm/
+        # https://github.com/robert/wavefunction-collapse
         #
         # Sums are over the weights of each remaining
         # allowed tile type for the square whose
@@ -233,19 +258,9 @@ module Examples
         #       (sum(weight * log(weight)) / sum(weight))
         #
         # https://github.com/mxgmn/WaveFunctionCollapse/blob/a6f79f0f1a4220406220782b71d3fcc73a24a4c2/Model.cs#L55-L67
-        # sum_weight = enumerable.sum(&:weight).to_f
-        # sum_times_log_weight = enumerable.sum { |w| w * Math.log(w) }
-        # sum_weight - (sum_times_log_weight / sum_weight)
-        # ... ?
-
-        # Alternative:
-        sum_weight = enumerable.sum(&:weight)
-        value = @random.rand(sum_weight)
-        w = 0
-        enumerable.find { |n|
-          w += n.weight
-          w > value
-        }
+        sum_weight = enumerable.sum(&:weight).to_f
+        sum_times_log_weight = enumerable.sum { |n| n.weight * Math.log(n.weight) }
+        sum_weight - (sum_times_log_weight / sum_weight)
       end
 
       # @param [Tile]
