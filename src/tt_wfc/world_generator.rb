@@ -227,10 +227,9 @@ module Examples
         # https://github.com/robert/wavefunction-collapse/blob/21b2e5d95ec7db6057382bfb61ba4557cdd436f4/main.py#L258
         sum_weight = enumerable.sum(&:weight)
         value = @random.rand(sum_weight)
-        w = 0
         enumerable.find { |n|
-          w += n.weight
-          w > value # TODO: Review
+          value -= n.weight
+          value < 0
         }
       end
 
