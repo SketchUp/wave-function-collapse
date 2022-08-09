@@ -239,10 +239,17 @@ module Examples
         cache = unresolved.map { |tile|
           e = shannon_entropy(tile.possibilities)
           [tile, e]
-        }
+        }.sort { |a, b| a[1] <=> b[1] }
         # 0 = tile
         # 1 = weight
-        cache.min { |a, b| a[1] <=> b[1] }[0]
+        # cache.min { |a, b| a[1] <=> b[1] }
+        # In case there are multiple with equal minimal entropy, add some
+        # randomness to it so it's not based on order in the collection.
+        # Using the collection order means there's a bias to the position of
+        # the tile.
+        tile, entropy = cache.first
+        options = cache.take_while { |t, e| e == entropy }
+        sample(options.map(&:first))
       end
 
       def shannon_entropy(enumerable)
