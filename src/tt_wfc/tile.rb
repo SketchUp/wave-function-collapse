@@ -140,10 +140,13 @@ module Examples
         if resolved?
           puts "Resolved #{self}. (Instance: #{instance.persistent_id})" if Sketchup.read_default('TT_WFC', 'Log', false) # TODO: Kludge
           possibility = possibilities.first
-          instance.definition = possibility.definition.instance.definition
+          su_instance = possibility.definition.instance
+          instance.definition = su_instance.definition
 
           tr = Geom::Transformation.translation(instance.transformation.origin)
           instance.transformation = tr * possibility.transformation
+
+          instance.set_attribute('tt_wfc', 'type', instance.definition.name)
         else
           # p [:update]
           instance.material = world.material_from_entropy(entropy)
