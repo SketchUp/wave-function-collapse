@@ -233,6 +233,22 @@ module Examples
         }
       end
 
+      # @param [Array<Possibility>] possibilities
+      # @param [Object]
+      def frequency_sample(possibilities)
+        sum_input_weight = state.tiles.sum(&:weight)
+        tile_frequencies = Hash[state.tiles.map { |tile|
+          [tile, tile.weight.to_f / sum_input_weight.to_f]
+        }]
+
+        possibilities.each { |possibility|
+          tile_def = possibility.definition
+          count = state.tiles.count { |t| t.definition == tile_def }
+          frequency = count.to_f / sum_input_weight.to_f
+
+        }
+      end
+
       # @param [Array<Tile>] tiles
       def sample_by_least_entropy(tiles)
         unresolved = tiles.select(&:unresolved?)

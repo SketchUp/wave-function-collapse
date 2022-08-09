@@ -31,6 +31,9 @@
 - [Superpositions, Sudoku, the Wave Function Collapse algorithm.](https://www.youtube.com/watch?v=2SuvO4Gi7uY)
 - https://marian42.de/article/wfc/
 
+## WFC in Building Design
+- https://mobile.twitter.com/EChasioti/status/1302673299898589184
+
 ## General
 
 - https://chloesun.medium.com/implementation-of-wave-function-collapse-algorithm-in-houdini-for-3d-content-generation-76f8eec573b1
