@@ -409,7 +409,7 @@ module Examples
         }
         # Generate new materials.
         step_range = max_entropy / steps
-        resolved_color = Sketchup::Color.new('white')
+        resolved_color = Sketchup::Color.new('purple')
         unresolved_color = Sketchup::Color.new('orange')
         steps.times.map { |i|
           min = step_range * i
