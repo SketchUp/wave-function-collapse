@@ -96,6 +96,13 @@ module Examples
       # @param [Integer] y
       # @param [Sketchup::View] view
       def getMenu(menu, flags, x, y, view)
+        tile = pick_tile(view, x, y)
+        if tile
+          menu.add_item('Assign Tile Weight') do
+            prompt_assign_tile_weight(tile)
+          end
+          menu.add_separator
+        end
         unless @selection.empty?
           menu.add_item('Assign Edge Type') do
             prompt_assign_connection_type_to_selection
@@ -292,15 +299,35 @@ module Examples
       def pick_edge(view, x, y)
         ph = view.pick_helper(x, y, APERTURE)
 
-        connection = nil
+        edge = nil
         @tiles.each { |tile|
-          connection = tile.edges.find { |connection|
-            picked = ph.test_point(connection.position)
+          edge = tile.edges.find { |edge|
+            picked = ph.test_point(edge.position)
           }
-          break if connection
+          break if edge
         }
 
-        connection
+        edge
+      end
+
+      # @param [Sketchup::View] view
+      # @param [Integer] x
+      # @param [Integer] y
+      # @return [Tile::TileEdge, nil]
+      def pick_tile(view, x, y)
+        # @type [Sketchup::PickHelper]
+        ph = view.pick_helper(x, y)
+        return nil if ph.count == 0
+
+        path = ph.path_at(0)
+        instance = path.find { |entity|
+          next false unless entity.is_a?(Sketchup::ComponentInstance)
+          dict = entity.definition.attribute_dictionary(ATTR_DICT, false)
+          !dict.nil?
+        }
+
+        return nil if instance.nil?
+        @tiles.find { |tile| tile.instance == instance }
       end
 
       # @return [Array<TileDefinition>]
@@ -493,6 +520,24 @@ module Examples
             reversed: reversed,
           )
         }
+      end
+
+      # @param [TileDefinition] tile
+      def prompt_assign_tile_weight(tile)
+        title = 'Assign Weight'
+        prompts = ['Weight']
+        defaults = [tile.weight]
+        result = UI.inputbox(prompts, defaults, title)
+        return unless result
+
+        weight = result[0]
+        model = Sketchup.active_model
+        model.start_operation('Assign Weight', true)
+        # TODO: Abstract this into TileDefinition
+        tile.instance.definition.set_attribute(ATTR_DICT, 'weight', weight)
+        tile.instance_variable_set(:@weight, weight)
+        model.commit_operation
+        model.active_view.invalidate
       end
 
     end # class
