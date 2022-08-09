@@ -147,6 +147,7 @@ module Examples
           instance.transformation = tr * possibility.transformation
 
           instance.set_attribute('tt_wfc', 'type', instance.definition.name)
+          instance.set_attribute('tt_wfc', 'weight', possibility.weight)
         else
           # p [:update]
           instance.material = world.material_from_entropy(entropy)

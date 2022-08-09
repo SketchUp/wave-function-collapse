@@ -373,6 +373,8 @@ module Examples
 
         instances = []
         group = model.entities.add_group
+        group.set_attribute('tt_wfc', 'size', [width, height])
+        group.set_attribute('tt_wfc', 'seed', seed.to_s) # Number can be too big!
         group.transform!(Geom::Vector3d.new(0, 0, 1.m))
         height.times { |y|
           width.times { |x|

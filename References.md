@@ -35,3 +35,9 @@
 
 - https://chloesun.medium.com/implementation-of-wave-function-collapse-algorithm-in-houdini-for-3d-content-generation-76f8eec573b1
 - https://www.gridbugs.org/wave-function-collapse/
+
+
+## Seeds
+
+- 195859161342489441180725517921355867494
+  - 296172899539013093395625120659970137010

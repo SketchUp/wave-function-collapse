@@ -74,6 +74,42 @@ module Examples
       @generator.run(start_paused: self.start_paused?)
     end
 
+    def self.prompt_derive
+      model = Sketchup.active_model
+      return unless model.selection.size == 1
+      return unless model.selection.first.is_a?(Sketchup::Group)
+
+      tile_tag = model.layers['Tiles']
+      group = model.selection.first
+      instances = group.entities.grep(Sketchup::ComponentInstance)
+      definitions = instances.map(&:definition)
+      tiles = definitions.tally.map { |definition, count|
+        instance = definition.instances.find { |i| i.layer == tile_tag }
+        raise if instance.nil?
+        # weight = instance.definition.get_attribute('tt_wfc', 'weight', 1)
+        TileDefinition.new(instance, weight: count)
+      }
+
+      # TODO: Deduplicate logic with normal generate
+      prompts = ["Width", "Height"]
+      defaults = [10, 10]
+      input = UI.inputbox(prompts, defaults, "Generate World")
+      return unless input
+
+      width, height = input
+
+      @generator&.stop
+      # Start the generation
+      seed = Sketchup.read_default('TT_WFC', 'Seed', nil)
+      seed = nil if seed < 1
+      @generator = WorldGenerator.new(width, height, tiles, seed: seed)
+
+      puts
+      puts "Generator seed: #{@generator.seed}"
+
+      @generator.run(start_paused: self.start_paused?)
+    end
+
     def self.stop_current_generator
       @generator&.stop
       @generator = nil
@@ -197,6 +233,20 @@ module Examples
 
     def self.active_generator?
       @generator && !@generator.stopped?
+    end
+
+    def self.context_menu(menu)
+      model = Sketchup.active_model
+      return unless model.selection.size == 1
+
+      group = model.selection[0]
+      return unless group.is_a?(Sketchup::Group)
+
+      return if group.attribute_dictionary('tt_wfc', false).nil?
+
+      menu.add_item('Derive New World') {
+        self.prompt_derive
+      }
     end
 
     # @param [String] basename
@@ -369,6 +419,10 @@ module Examples
       # toolbar.add_item(cmd_decrease_speed)
       # toolbar.add_item(cmd_increase_speed)
       toolbar.restore
+
+      UI.add_context_menu_handler do |context_menu|
+        self.context_menu(context_menu)
+      end
 
       file_loaded(__FILE__)
     end
