@@ -113,6 +113,7 @@ module Examples
         end
       end
 
+      # @param [Sketchup::View] view
       def draw_symmetry_annotation(view, points, reversed, size)
         return if points.empty?
 
@@ -148,8 +149,41 @@ module Examples
       end
 
       # @param [Sketchup::View] view
+      # @param [Array<Tile>] tiles
+      def draw_weights(view, tiles)
+        weighted = tiles.select { |tile| tile.weight > 1 }
+        options = {
+          bold: true,
+          size: 8,
+          align: TextAlignCenter,
+          vertical_align: TextVerticalAlignCenter,
+          color: 'white',
+        }
+        weighted.each { |tile|
+          point = view.screen_coords(tile.centroid)
+          text = "#{tile.weight}"
+          bounds = view.text_bounds(point, text, options)
+          x1, y1 = bounds.upper_left.to_a
+          x2, y2 = bounds.lower_right.to_a
+          x1 -= 1
+          # x2 += 1
+          pts = [
+            Geom::Point3d.new(x1, y2),
+            Geom::Point3d.new(x2, y2),
+            Geom::Point3d.new(x2, y1),
+            Geom::Point3d.new(x1, y1),
+          ]
+          view.drawing_color = 'black'
+          view.draw2d(GL_QUADS, pts)
+          view.draw_text(point, text, options)
+        }
+      end
+
+      # @param [Sketchup::View] view
       def draw(view)
         view.line_stipple = ''
+
+        draw_weights(view, @tiles)
 
         # Draw edges points.
         # (Backgrounds)
@@ -278,7 +312,10 @@ module Examples
         instances = model.entities.grep(Sketchup::ComponentInstance).select { |instance|
           instance.layer == tile_tag
         }
-        instances.map { |instance| TileDefinition.new(instance) }
+        instances.map { |instance|
+          weight = instance.definition.get_attribute('tt_wfc', 'weight', 1)
+          TileDefinition.new(instance, weight: weight)
+        }
       end
 
       ATTR_DICT = 'tt_wfc'

@@ -34,6 +34,18 @@ module Examples
         edges.map(&:position)
       end
 
+      # @return [Geom::Point3d]
+      def centroid
+        point = Geom::Point3d.new
+        edge_midpoints.each { |pt|
+          point.offset!(pt.to_a)
+        }
+        point.x /= 4
+        point.y /= 4
+        point.z /= 4
+        point
+      end
+
       # @return [String]
       def to_s
         "TileDefinition(#{object_id})"
