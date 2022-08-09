@@ -50,7 +50,6 @@ module Examples
         @height = height
         @definitions = definitions # Tile Definitions
         @possibilities = generate_possibilities(definitions)
-        puts JSON.pretty_generate(@connections)
         @materials = generate_entropy_materials(@possibilities.size)
         @state = nil
         @timer = nil
