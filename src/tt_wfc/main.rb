@@ -79,6 +79,14 @@ module Examples
       Sketchup.read_default('TT_WFC', 'StartPaused', false)
     end
 
+    def self.toggle_break_at_iteration
+      Sketchup.write_default('TT_WFC', 'BreakAtIteration', !self.break_at_iteration?)
+    end
+
+    def self.break_at_iteration?
+      Sketchup.read_default('TT_WFC', 'BreakAtIteration', false)
+    end
+
     def self.decrease_current_generator_speed
       @generator&.decrease_speed
     end
@@ -252,6 +260,15 @@ module Examples
       cmd.large_icon = self.icon('halt')
       cmd_toggle_start_paused = cmd
 
+      cmd = UI::Command.new('Break at Iteration') {
+        self.toggle_break_at_iteration
+      }
+      cmd.set_validation_proc  {
+        self.break_at_iteration? ? MF_CHECKED : MF_ENABLED
+      }
+      cmd.tooltip = cmd.menu_text
+      cmd_toggle_break_at_iteration = cmd
+
       cmd = UI::Command.new('Step') {
         self.advance_next_step
       }
@@ -296,6 +313,7 @@ module Examples
       menu.add_separator
       menu.add_item(cmd_step)
       menu.add_item(cmd_toggle_start_paused)
+      menu.add_item(cmd_toggle_break_at_iteration)
       menu.add_item(cmd_seed)
       # menu.add_separator
       # menu.add_item(cmd_decrease_speed)

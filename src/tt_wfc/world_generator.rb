@@ -152,6 +152,7 @@ module Examples
           tile = state.queue.pop
           propagate(tile)
         end
+        tick
       rescue
         pause
         raise
@@ -270,13 +271,6 @@ module Examples
         constrained
       end
 
-      # @param [Tile] tile1
-      # @param [String] edge_type1
-      # @param [Tile] tile2
-      # @param [String] edge_type2
-      def edges_can_connect?(tile1, edge_type1, tile2, edge_type2)
-      end
-
       # @param [Array<Tile>] tiles
       def sort_by_entropy(tiles)
         tiles.sort { |a, b| a.entropy <=> b.entropy }
@@ -315,6 +309,24 @@ module Examples
         instances.map.with_index { |instance, i|
           Tile.new(self, instance, i)
         }
+      end
+
+      def break_at_iteration?
+        Sketchup.read_default('TT_WFC', 'StartPaused', false) &&
+          Sketchup.read_default('TT_WFC', 'BreakAtIteration', false)
+      end
+
+      def tick
+        if break_at_iteration?
+          if state.queue.empty?
+            # puts '-- empty queue'
+            pause
+          else
+            # puts "-- resume if paused (#{paused?}) [#{@timer}]"
+            # resume if paused?
+            resume if @timer.nil?
+          end
+        end
       end
 
       # @param [Sketchup::Model] model
