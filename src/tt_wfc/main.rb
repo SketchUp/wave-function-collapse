@@ -1,5 +1,6 @@
 require 'sketchup.rb'
 
+require 'tt_wfc/asset_manager'
 require 'tt_wfc/tile_tool'
 require 'tt_wfc/world_generator'
 
@@ -49,18 +50,13 @@ module Examples
     end
 
     def self.generate(width, height)
-      # Use only selected tiles if any are selected.
       model = Sketchup.active_model
-      tile_tag = model.layers['Tiles']
-      raise "'Tiles' tag not found" if tile_tag.nil?
       source = model.selection.empty? ? model.entities : model.selection
-      instances = source.grep(Sketchup::ComponentInstance).select { |instance|
-        instance.layer == tile_tag
-      }
-      prototypes = instances.map { |instance|
-        weight = instance.definition.get_attribute('tt_wfc', 'weight', 1)
-        TilePrototype.new(instance, weight: weight)
-      }
+
+      assets = AssetManager.new(model)
+      instances = assets.tile_prototype_instances(source)
+      prototypes = assets.tile_prototypes(instances)
+      raise 'no tile prototypes loaded' if prototypes.empty?
 
       @generator&.stop
       # Start the generation
@@ -79,18 +75,22 @@ module Examples
       return unless model.selection.size == 1
       return unless model.selection.first.is_a?(Sketchup::Group)
 
-      tile_tag = model.layers['Tiles']
+      assets = AssetManager.new(model)
       group = model.selection.first
       instances = group.entities.grep(Sketchup::ComponentInstance)
+      # Not reading the weight from the attributes, instead using the weight
+      # from it's frequency in the group.
       definitions = instances.map(&:definition)
-      tiles = definitions.tally.map { |definition, count|
-        instance = definition.instances.find { |i| i.layer == tile_tag }
-        raise if instance.nil?
-        # weight = instance.definition.get_attribute('tt_wfc', 'weight', 1)
-        TilePrototype.new(instance, weight: count)
+      prototypes = definitions.tally.map { |definition, count|
+        instance = instances.find { |i| i.definition == definition }
+        prototype = assets.deserialize_tile_prototype(instance)
+        prototype.weight = count
+        prototype
       }
+      raise 'no tile prototypes loaded' if prototypes.empty?
 
       # TODO: Deduplicate logic with normal generate
+      # TODO: Add seed as option
       prompts = ["Width", "Height"]
       defaults = [10, 10]
       input = UI.inputbox(prompts, defaults, "Generate World")
@@ -102,7 +102,7 @@ module Examples
       # Start the generation
       seed = Sketchup.read_default('TT_WFC', 'Seed', nil)
       seed = nil if seed < 1
-      @generator = WorldGenerator.new(width, height, tiles, seed: seed)
+      @generator = WorldGenerator.new(width, height, prototypes, seed: seed)
 
       puts
       puts "Generator seed: #{@generator.seed}"
@@ -152,24 +152,25 @@ module Examples
     def self.prompt_assign_weight
       model = Sketchup.active_model
       instances = model.selection.grep(Sketchup::ComponentInstance)
-      definitions = instances.map(&:definition)
-      return if definitions.empty?
+      return if instances.empty?
 
-      default = 1
-      if definitions.size == 1
-        default = definitions[0].get_attribute('tt_wfc', 'weight', 1)
-      end
+      assets = AssetManager.new(model)
+      prototypes = instances.map { |instance|
+        assets.deserialize_tile_prototype(instance)
+      }
 
-      prompts = ["Weight"]
-      defaults = [default]
-      input = UI.inputbox(prompts, defaults, "Assign Weight")
+      default_weight = prototypes.size == 1 ? prototypes.first.weight : 1
+      prompts = ['Weight']
+      defaults = [default_weight]
+      input = UI.inputbox(prompts, defaults, 'Assign Weight')
       return unless input
 
       weight = input[0]
 
       model.start_operation('Assign Weight', true)
-      definitions.each { |definition|
-        definition.set_attribute('tt_wfc', 'weight', weight)
+      prototypes.each { |prototype|
+        prototype.weight = weight
+        assets.serialize_tile_prototype(prototype)
       }
       model.commit_operation
     end
@@ -199,26 +200,6 @@ module Examples
         tr = Geom::Transformation.translation([x - offset_x, 0.0, 0.0])
         instance = entities.add_instance(definition, tr)
         x = instance.bounds.max.x
-      }
-      model.commit_operation
-    end
-
-    def self.update_asset_data
-      model = Sketchup.active_model
-      tile_tag = model.layers['Tiles']
-      raise "'Tiles' tag not found" if tile_tag.nil?
-
-      source = model.selection.empty? ? model.entities : model.selection
-      instances = source.grep(Sketchup::ComponentInstance).select { |instance|
-        instance.layer == tile_tag
-      }
-      model.start_operation('Update Asset Data', true)
-      instances.each { |instance|
-        weight = instance.definition.get_attribute('tt_wfc', 'weight', 1)
-        prototype = TilePrototype.new(instance, weight: weight)
-        prototype.edges.each { |edge|
-          edge.type = edge.type # Kludge: Forces the edge to serialize.
-        }
       }
       model.commit_operation
     end
@@ -396,9 +377,6 @@ module Examples
       menu.add_item(cmd_weight)
       menu.add_item('Load Assets') {
         self.prompt_load_assets
-      }
-      menu.add_item('Update Asset Data') {
-        self.update_asset_data
       }
 
       # Toolbar

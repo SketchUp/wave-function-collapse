@@ -1,4 +1,5 @@
 require 'tt_wfc/constants/view'
+require 'tt_wfc/asset_manager'
 require 'tt_wfc/edge_prototype'
 require 'tt_wfc/tile_prototype'
 
@@ -334,16 +335,9 @@ module Examples
       # @return [Array<TilePrototype>]
       def load_tiles
         model = Sketchup.active_model
-        tile_tag = model.layers['Tiles']
-        raise "'Tiles' tag not found" if tile_tag.nil?
-
-        instances = model.entities.grep(Sketchup::ComponentInstance).select { |instance|
-          instance.layer == tile_tag
-        }
-        instances.map { |instance|
-          weight = instance.definition.get_attribute('tt_wfc', 'weight', 1)
-          TilePrototype.new(instance, weight: weight)
-        }
+        assets = AssetManager.new(model)
+        instances = assets.tile_prototype_instances(model.entities)
+        assets.tile_prototypes(instances)
       end
 
       ATTR_DICT = 'tt_wfc'
@@ -521,21 +515,23 @@ module Examples
         }
       end
 
-      # @param [TilePrototype] tile
-      def prompt_assign_tile_weight(tile)
+      # @param [TilePrototype] prototype
+      def prompt_assign_tile_weight(prototype)
         title = 'Assign Weight'
         prompts = ['Weight']
-        defaults = [tile.weight]
+        defaults = [prototype.weight]
         result = UI.inputbox(prompts, defaults, title)
         return unless result
 
         weight = result[0]
         model = Sketchup.active_model
+        assets = AssetManager.new(model)
+
         model.start_operation('Assign Weight', true)
-        # TODO: Abstract this into TilePrototype
-        tile.instance.definition.set_attribute(ATTR_DICT, 'weight', weight)
-        tile.instance_variable_set(:@weight, weight)
+        prototype.weight = weight
+        assets.serialize_tile_prototype(prototype)
         model.commit_operation
+
         model.active_view.invalidate
       end
 

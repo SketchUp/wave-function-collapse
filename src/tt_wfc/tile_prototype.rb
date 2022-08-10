@@ -14,7 +14,7 @@ module Examples
       attr_reader :instance
 
       # @return [Integer]
-      attr_reader :weight
+      attr_accessor :weight
 
       # @return [Array<TileEdge>]
       attr_reader :edges
