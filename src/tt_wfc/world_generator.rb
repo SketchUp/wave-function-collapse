@@ -135,7 +135,7 @@ module Examples
         else
           # This is the wave propagation branch.
           log { '> Next in queue...' }
-          tile = state.queue.pop
+          tile = state.queue.pop # TODO: Use least entropy like above?
           propagate(tile)
         end
         tick
