@@ -143,14 +143,14 @@ module Examples
       ATTR_TYPES = 'connection_types'
 
       # @param [Sketchup::Model] model
-      # @return [Array<ConnectionType>]
+      # @return [Array<EdgePrototype>]
       def get_connection_types
         # KLUDGE!
         model = Sketchup.active_model
         model.get_attribute(ATTR_DICT, ATTR_TYPES, []).map { |data|
           type_id, color, symmetrical = data
           symmetrical = true if symmetrical.nil?
-          # ConnectionType.new(type_id, color, symmetrical)
+          # EdgePrototype.new(type_id, color, symmetrical)
           [type_id, color, symmetrical]
         }
       end

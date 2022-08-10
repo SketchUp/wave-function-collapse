@@ -16,9 +16,6 @@ module Examples
       # @return [Array<Possibility>]
       attr_reader :possibilities
 
-      # @return [Hash]
-      attr_reader :connections
-
       # @return [Float]
       attr_reader :speed
 

@@ -1,4 +1,5 @@
 require 'tt_wfc/constants/view'
+require 'tt_wfc/edge_prototype'
 require 'tt_wfc/tile_prototype'
 
 module Examples
@@ -348,22 +349,20 @@ module Examples
       ATTR_DICT = 'tt_wfc'
       ATTR_TYPES = 'connection_types'
 
-      ConnectionType = Struct.new(:type_id, :color, :symmetrical)
-
       # @param [Sketchup::Model] model
-      # @return [Array<ConnectionType>]
+      # @return [Array<EdgePrototype>]
       def get_connection_types(model)
         model.get_attribute(ATTR_DICT, ATTR_TYPES, []).map { |data|
           type_id, color, symmetrical = data
           symmetrical = true if symmetrical.nil?
-          ConnectionType.new(type_id, color, symmetrical)
+          EdgePrototype.new(type_id, color, symmetrical)
         }
       end
 
       # @param [Sketchup::Model] model
-      # @param [ConnectionType] type
+      # @param [EdgePrototype] type
       def add_connection_type(model, type)
-        raise unless type.is_a?(ConnectionType)
+        raise unless type.is_a?(EdgePrototype)
         types = get_connection_types(model)
         raise ArgumentError, "#{type[0]} already exist" if types.any? { |t| t[0] == type[0] }
         types << type
@@ -372,9 +371,9 @@ module Examples
 
       # @param [Sketchup::Model] model
       # @param [String] existing_type_id
-      # @param [ConnectionType] type
+      # @param [EdgePrototype] type
       def edit_connection_type(model, existing_type_id, type)
-        raise unless type.is_a?(ConnectionType)
+        raise unless type.is_a?(EdgePrototype)
         types = get_connection_types(model)
         raise ArgumentError, "#{existing_type_id} doesn't exist" if types.none? { |t| t[0] == existing_type_id }
         raise ArgumentError, "#{type[0]} already exist" if existing_type_id != type.type_id && types.any? { |t| t[0] == type[0] }
@@ -412,7 +411,7 @@ module Examples
 
         model = Sketchup.active_model
         model.start_operation('Add Connection Type', true)
-        add_connection_type(model, ConnectionType.new(type, color, symmetrical))
+        add_connection_type(model, EdgePrototype.new(type, color, symmetrical))
         model.commit_operation
       end
 
@@ -453,7 +452,7 @@ module Examples
 
         model = Sketchup.active_model
         model.start_operation('Add Connection Type', true)
-        edit_connection_type(model, type_id, ConnectionType.new(type, color, symmetrical))
+        edit_connection_type(model, type_id, EdgePrototype.new(type, color, symmetrical))
         rename_edge_ids(model, type_id, type) if type != type_id
         model.commit_operation
       end
