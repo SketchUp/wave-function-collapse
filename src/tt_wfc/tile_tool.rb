@@ -1,6 +1,7 @@
 require 'tt_wfc/constants/view'
 require 'tt_wfc/asset_manager'
 require 'tt_wfc/edge_prototype'
+require 'tt_wfc/tile_edge'
 require 'tt_wfc/tile_prototype'
 
 module Examples
@@ -10,15 +11,17 @@ module Examples
 
       include ViewConstants
 
+      APERTURE = 10 # pixels (pick aperture)
+
       DRAG_THRESHOLD = 2 # pixels
 
       def initialize
         @tiles = load_tiles
 
-        # @type [Set<TilePrototype::TileEdge>]
+        # @type [Set<TileEdge>]
         @selection = Set.new
 
-        # @type [TilePrototype::TileEdge, nil]
+        # @type [TileEdge, nil]
         @mouse_over = nil
 
         # @type [Geom::Point3d, nil]
@@ -291,8 +294,6 @@ module Examples
         end
         nil
       end
-
-      APERTURE = 10 # pixels
 
       # @param [Sketchup::View] view
       # @param [Integer] x
