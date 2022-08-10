@@ -3,7 +3,7 @@ require 'tt_wfc/tile_edge'
 module Examples
   module WFC
 
-    class TileDefinition
+    class TilePrototype
 
       # NOTE: It's important the order is clockwise.
       EDGE_IDS = [
@@ -16,7 +16,7 @@ module Examples
       # @return [Integer]
       attr_reader :weight
 
-      # @return [Array<TileDefinition::TileEdge>]
+      # @return [Array<TileEdge>]
       attr_reader :edges
 
       # @param [Sketchup::ComponentInstance] instance
@@ -27,6 +27,11 @@ module Examples
         @edges = EDGE_IDS.map { |edge_id|
           TileEdge.new(self, edge_id)
         }
+      end
+
+      # @return [Sketchup::ComponentDefinition]
+      def definition
+        instance.definition
       end
 
       # @return [Array<Geom::Point3d>]
@@ -48,7 +53,7 @@ module Examples
 
       # @return [String]
       def to_s
-        "TileDefinition(#{object_id})"
+        "TilePrototype(#{object_id})"
       end
       alias inspect to_s
 

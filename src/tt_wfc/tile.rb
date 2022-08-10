@@ -59,7 +59,6 @@ module Examples
       def remove_possibilities(possibilities)
         # p [:possibilities, :before, @possibilities.size, entropy]
         possibilities.each { |possibility|
-          raise "expected Possibility, got #{possibility.class}" unless possibility.is_a?(Possibility)
           # raise 'already resolved' if resolved?
           # @possibilities.delete(possibility)
           warn "#{self} unable to remove possibility" if @possibilities.delete(possibility).nil?
@@ -71,7 +70,6 @@ module Examples
 
       # @param [Possibility] possibility
       def remove_possibility(possibility)
-        raise "expected Possibility, got #{possibility.class}" unless possibility.is_a?(Possibility)
         raise 'already resolved' if resolved?
         if possibilities.delete(possibility)
           update
@@ -80,7 +78,6 @@ module Examples
 
       # @param [Possibility] possibility
       def resolve_to(possibility)
-        raise "expected Possibility, got #{possibility.class}" unless possibility.is_a?(Possibility)
         raise 'already resolved' if resolved?
         raise 'possibility not found' unless possibilities.select! { |item| item == possibility }
         raise "#{self} failed to resolve" if failed?
@@ -140,8 +137,7 @@ module Examples
         if resolved?
           puts "Resolved #{self}. (Instance: #{instance.persistent_id})" if Sketchup.read_default('TT_WFC', 'Log', false) # TODO: Kludge
           possibility = possibilities.first
-          su_instance = possibility.definition.instance
-          instance.definition = su_instance.definition
+          instance.definition = possibility.prototype.definition
 
           tr = Geom::Transformation.translation(instance.transformation.origin)
           instance.transformation = tr * possibility.transformation

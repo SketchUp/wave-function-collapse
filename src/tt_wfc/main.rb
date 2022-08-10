@@ -57,16 +57,16 @@ module Examples
       instances = source.grep(Sketchup::ComponentInstance).select { |instance|
         instance.layer == tile_tag
       }
-      tile_definitions = instances.map { |instance|
+      prototypes = instances.map { |instance|
         weight = instance.definition.get_attribute('tt_wfc', 'weight', 1)
-        TileDefinition.new(instance, weight: weight)
+        TilePrototype.new(instance, weight: weight)
       }
 
       @generator&.stop
       # Start the generation
       seed = Sketchup.read_default('TT_WFC', 'Seed', nil)
       seed = nil if seed < 1
-      @generator = WorldGenerator.new(width, height, tile_definitions, seed: seed)
+      @generator = WorldGenerator.new(width, height, prototypes, seed: seed)
 
       puts
       puts "Generator seed: #{@generator.seed}"
@@ -87,7 +87,7 @@ module Examples
         instance = definition.instances.find { |i| i.layer == tile_tag }
         raise if instance.nil?
         # weight = instance.definition.get_attribute('tt_wfc', 'weight', 1)
-        TileDefinition.new(instance, weight: count)
+        TilePrototype.new(instance, weight: count)
       }
 
       # TODO: Deduplicate logic with normal generate
@@ -215,8 +215,8 @@ module Examples
       model.start_operation('Update Asset Data', true)
       instances.each { |instance|
         weight = instance.definition.get_attribute('tt_wfc', 'weight', 1)
-        definition = TileDefinition.new(instance, weight: weight)
-        definition.edges.each { |edge|
+        prototype = TilePrototype.new(instance, weight: weight)
+        prototype.edges.each { |edge|
           edge.type = edge.type # Kludge: Forces the edge to serialize.
         }
       }
@@ -426,20 +426,6 @@ module Examples
 
       file_loaded(__FILE__)
     end
-
-=begin
-
-model = Sketchup.active_model
-generator = Examples::WFC.generator
-pos = generator.possibilities.slice(4, 4)
-pos.each { |pb|
-  g = model.entities.add_group
-  g.transform!([0,0,5.m])
-  g.entities.add_instance(pb.definition.instance.definition, pb.transformation)
-  g.set_attribute('wfc', 'edges', pb.edges)
-}
-
-=end
 
   end # module WFC
 end # module Examples

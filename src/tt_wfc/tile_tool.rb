@@ -1,5 +1,5 @@
 require 'tt_wfc/constants/view'
-require 'tt_wfc/tile_definition'
+require 'tt_wfc/tile_prototype'
 
 module Examples
   module WFC
@@ -13,10 +13,10 @@ module Examples
       def initialize
         @tiles = load_tiles
 
-        # @type [Set<TileDefinition::TileEdge>]
+        # @type [Set<TilePrototype::TileEdge>]
         @selection = Set.new
 
-        # @type [TileDefinition::TileEdge, nil]
+        # @type [TilePrototype::TileEdge, nil]
         @mouse_over = nil
 
         # @type [Geom::Point3d, nil]
@@ -330,7 +330,7 @@ module Examples
         @tiles.find { |tile| tile.instance == instance }
       end
 
-      # @return [Array<TileDefinition>]
+      # @return [Array<TilePrototype>]
       def load_tiles
         model = Sketchup.active_model
         tile_tag = model.layers['Tiles']
@@ -341,7 +341,7 @@ module Examples
         }
         instances.map { |instance|
           weight = instance.definition.get_attribute('tt_wfc', 'weight', 1)
-          TileDefinition.new(instance, weight: weight)
+          TilePrototype.new(instance, weight: weight)
         }
       end
 
@@ -522,7 +522,7 @@ module Examples
         }
       end
 
-      # @param [TileDefinition] tile
+      # @param [TilePrototype] tile
       def prompt_assign_tile_weight(tile)
         title = 'Assign Weight'
         prompts = ['Weight']
@@ -533,7 +533,7 @@ module Examples
         weight = result[0]
         model = Sketchup.active_model
         model.start_operation('Assign Weight', true)
-        # TODO: Abstract this into TileDefinition
+        # TODO: Abstract this into TilePrototype
         tile.instance.definition.set_attribute(ATTR_DICT, 'weight', weight)
         tile.instance_variable_set(:@weight, weight)
         model.commit_operation

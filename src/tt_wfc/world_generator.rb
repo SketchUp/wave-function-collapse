@@ -1,28 +1,17 @@
+require 'tt_wfc/possibility'
 require 'tt_wfc/tile'
 require 'tt_wfc/tile_queue'
 
 module Examples
   module WFC
 
-    Possibility = Struct.new(:definition, :edges, :transformation) do
-
-      def weight
-        definition.weight
-      end
-
-    end
-    # @!parse
-    #   class Possibility
-    #     attr_accessor :definition, :edges, :transformation
-    #   end
-
     class WorldGenerator
 
       # @return [Integer]
       attr_reader :width, :height
 
-      # @return [Array<TileDefinition>]
-      attr_reader :definitions
+      # @return [Array<TilePrototype>]
+      attr_reader :prototypes
 
       # @return [Array<Possibility>]
       attr_reader :possibilities
@@ -41,15 +30,15 @@ module Examples
 
       # @param [Integer] width
       # @param [Integer] height
-      # @param [Array<TileDefinition>] definitions
+      # @param [Array<TilePrototype>] prototype
       # @param [Integer] seed
-      def initialize(width, height, definitions, seed: nil)
+      def initialize(width, height, prototype, seed: nil)
         @seed = seed || Random.new_seed
         @random = Random.new(@seed)
         @width = width
         @height = height
-        @definitions = definitions # Tile Definitions
-        @possibilities = generate_possibilities(definitions)
+        @prototype = prototype
+        @possibilities = generate_possibilities(prototype)
         @materials = generate_entropy_materials(@possibilities.size)
         @state = nil
         @timer = nil
@@ -390,12 +379,11 @@ module Examples
         instances
       end
 
-      # @param [Array<TileDefinition>] definitions
-      def generate_possibilities(definitions)
+      # @param [Array<TilePrototype>] prototypes
+      def generate_possibilities(prototypes)
         result = []
-        definitions.each { |definition|
-          # edges = definition.edges.map(&:type)
-          edges = definition.edges.dup
+        prototypes.each { |prototype|
+          edges = prototype.edges.dup
           4.times { |i|
             # :north, :east, :south, :west
             # --------------------
@@ -411,7 +399,7 @@ module Examples
             # edges = [w, n, e, s]
             # tr = -270
             tr = Geom::Transformation.rotation(ORIGIN, Z_AXIS, 90.degrees * i)
-            result << Possibility.new(definition, edges.rotate(i), tr)
+            result << Possibility.new(prototype, edges.rotate(i), tr)
           }
         }
         result

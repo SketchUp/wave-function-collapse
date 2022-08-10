@@ -7,7 +7,7 @@ module Examples
 
       include BoundingBoxConstants
 
-      # @return [TileDefinition]
+      # @return [TilePrototype]
       attr_reader :tile
 
       # @return [Symbol] :north, :east, :south, :west
@@ -16,7 +16,7 @@ module Examples
       # @return [String]
       attr_reader :type
 
-      # @param [TileDefinition] tile
+      # @param [TilePrototype] tile
       # @param [Symbol] edge_id :north, :east, :south, :west
       # @param [Geom::Point3d] position
       def initialize(tile, edge_id)
