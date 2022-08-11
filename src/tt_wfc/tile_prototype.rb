@@ -24,8 +24,9 @@ module Examples
       def initialize(instance, weight: 1)
         @instance = instance
         @weight = weight
+        assets = AssetManager.new(instance.model) # KLUDGE! Circular dependency!
         @edges = EDGE_IDS.map { |edge_id|
-          TileEdge.new(self, edge_id)
+          assets.deserialize_tile_edge(self, edge_id)
         }
       end
 

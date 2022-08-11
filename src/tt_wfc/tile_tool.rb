@@ -60,10 +60,10 @@ module Examples
         @mouse_position = Geom::Point3d.new(x, y)
         @mouse_over = pick_edge(view, x, y)
 
-        type = @mouse_over ? @mouse_over.type || '<unassigned>' : nil
+        edge_type_id = @mouse_over ? @mouse_over.type_id || '<unassigned>' : nil
 
-        if type
-          tooltip = "Type: #{type}"
+        if edge_type_id
+          tooltip = "Type: #{edge_type_id}"
           unless @mouse_over.symmetrical?
             tooltip << ", Asymmetrical"
             tooltip << " (Reversed)" if @mouse_over.reversed?
@@ -110,18 +110,18 @@ module Examples
         end
         unless @selection.empty?
           menu.add_item('Assign Edge Type') do
-            prompt_assign_connection_type_to_selection
+            prompt_assign_edge_type_to_selection
           end
           menu.add_separator
         end
         menu.add_item('Add Edge Type') do
-          prompt_add_connection_type
+          prompt_add_edge_type
         end
         menu.add_item('Remove Edge Type') do
-          prompt_remove_connection_type
+          prompt_remove_edge_type
         end
         menu.add_item('Edit Edge Type') do
-          prompt_edit_connection_type
+          prompt_edit_edge_type
         end
       end
 
@@ -214,23 +214,23 @@ module Examples
         draw_symmetry_annotation(view, rev_points, true, 12)
         # (Cross-hairs)
         view.line_width = 2
-        connection_types = get_connection_types(view.model)
-        connection_colors = Hash[connection_types.map { |t| [t.type_id, t.color] }]
+        edge_types = get_edge_types(view.model)
+        edge_colors = Hash[edge_types.map { |e| [e.type_id, e.color] }]
         edges = @tiles.flat_map(&:edges)
-        edges.sort_by { |c| c.type || '' }.chunk { |c| c.type || '' }.each { |type_id, items|
-          color = connection_colors[type_id] || 'white'
+        edges.sort_by { |e| e.type_id || '' }.chunk { |e| e.type_id || '' }.each { |type_id, items|
+          color = edge_colors[type_id] || 'white'
           pts = items.map(&:position)
           view.draw_points(pts, 10, DRAW_PLUS, color)
         }
 
-        # Draw selected connection point.
+        # Draw selected edge points.
         unless @selection.empty?
           selected = @selection.map(&:position)
           view.line_width = 2
           view.draw_points(selected, 12, DRAW_OPEN_SQUARE, 'red')
         end
 
-        # Draw moused over connection point.
+        # Draw moused over edge point.
         if @mouse_over
           view.line_width = 2
           view.draw_points([@mouse_over.position], 12, DRAW_OPEN_SQUARE, 'orange')
@@ -322,11 +322,12 @@ module Examples
         ph = view.pick_helper(x, y)
         return nil if ph.count == 0
 
+        model = Sketchup.active_model
+        assets = AssetManager.new(model)
+
         path = ph.path_at(0)
         instance = path.find { |entity|
-          next false unless entity.is_a?(Sketchup::ComponentInstance)
-          dict = entity.definition.attribute_dictionary(ATTR_DICT, false)
-          !dict.nil?
+          entity.is_a?(Sketchup::ComponentInstance) && assets.has_wfc_data?(entity.definition)
         }
 
         return nil if instance.nil?
@@ -341,56 +342,45 @@ module Examples
         assets.tile_prototypes(instances)
       end
 
-      ATTR_DICT = 'tt_wfc'
-      ATTR_TYPES = 'connection_types'
-
       # @param [Sketchup::Model] model
       # @return [Array<EdgePrototype>]
-      def get_connection_types(model)
-        model.get_attribute(ATTR_DICT, ATTR_TYPES, []).map { |data|
-          type_id, color, symmetrical = data
-          symmetrical = true if symmetrical.nil?
-          EdgePrototype.new(type_id, color, symmetrical)
-        }
+      def get_edge_types(model)
+        assets = AssetManager.new(model)
+        assets.deserialize_edge_prototypes
       end
 
       # @param [Sketchup::Model] model
-      # @param [EdgePrototype] type
-      def add_connection_type(model, type)
-        raise unless type.is_a?(EdgePrototype)
-        types = get_connection_types(model)
-        raise ArgumentError, "#{type[0]} already exist" if types.any? { |t| t[0] == type[0] }
-        types << type
-        model.set_attribute(ATTR_DICT, ATTR_TYPES, types.map(&:to_a))
+      # @param [EdgePrototype] prototype
+      def add_edge_type(model, prototype)
+        assets = AssetManager.new(model)
+        assets.add_edge_prototype(prototype)
       end
 
       # @param [Sketchup::Model] model
       # @param [String] existing_type_id
-      # @param [EdgePrototype] type
-      def edit_connection_type(model, existing_type_id, type)
-        raise unless type.is_a?(EdgePrototype)
-        types = get_connection_types(model)
-        raise ArgumentError, "#{existing_type_id} doesn't exist" if types.none? { |t| t[0] == existing_type_id }
-        raise ArgumentError, "#{type[0]} already exist" if existing_type_id != type.type_id && types.any? { |t| t[0] == type[0] }
-        i = types.index { |t| t[0] == existing_type_id }
-        types[i] = type
-        p [:edit_connection_type, types.map(&:to_a)]
-        model.set_attribute(ATTR_DICT, ATTR_TYPES, types.map(&:to_a))
+      # @param [EdgePrototype] edge_type
+      def edit_edge_type(model, existing_type_id, edge_type)
+        assets = AssetManager.new(model)
+        assets.edit_edge_type(existing_type_id, edge_type)
       end
 
       # @param [Sketchup::Model] model
       # @param [String] existing_type_id
-      def delete_connection_type(model, existing_type_id)
-        types = get_connection_types(model)
-        raise ArgumentError, "#{existing_type_id} doesn't exist" if types.none? { |t| t[0] == existing_type_id }
-        i = types.index { |t| t[0] == existing_type_id }
-        types.delete_at(i)
-        model.set_attribute(ATTR_DICT, ATTR_TYPES, types.map(&:to_a))
+      def delete_edge_type(model, existing_type_id)
+        assets = AssetManager.new(model)
+        assets.delete_edge_type(existing_type_id)
       end
 
-      def prompt_connection_type(title, id: 'connection-id', symmetrical: true, color: Sketchup::Color.names.sample)
-        prompts = ['Connection ID', 'Symmetrical', 'Color']
-        p [:symmetrical, symmetrical]
+      # @param [String] title
+      # @param [String] id
+      # @param [Boolean] symmetrical
+      # @param [String] color
+      def prompt_edge_type_data(title,
+          id: 'edge-type-id',
+          symmetrical: true,
+          color: Sketchup::Color.names.sample
+        )
+        prompts = ['Edge Type ID', 'Symmetrical', 'Color']
         defaults = [id, symmetrical.to_s, color]
         list = ['', 'true|false', Sketchup::Color.names.join('|')]
         result = UI.inputbox(prompts, defaults, list, title)
@@ -398,36 +388,36 @@ module Examples
         result
       end
 
-      def prompt_add_connection_type
-        input = prompt_connection_type('Create Connection Type')
+      def prompt_add_edge_type
+        input = prompt_edge_type_data('Create Edge Type')
         return unless input
 
         type, symmetrical, color = input
 
         model = Sketchup.active_model
-        model.start_operation('Add Connection Type', true)
-        add_connection_type(model, EdgePrototype.new(type, color, symmetrical))
+        model.start_operation('Add Edge Type', true)
+        add_edge_type(model, EdgePrototype.new(type, color, symmetrical))
         model.commit_operation
       end
 
-      def prompt_remove_connection_type
-        input = prompt_pick_connection_type('Remove Connection Type')
+      def prompt_remove_edge_type
+        input = prompt_choose_edge_type('Remove Edge Type')
         return unless input
 
         type_id = input[0]
 
         model = Sketchup.active_model
-        model.start_operation('Remove Connection Type', true)
-        delete_connection_type(model, type_id)
+        model.start_operation('Remove Edge Type', true)
+        delete_edge_type(model, type_id)
         remove_edge_ids(model, type_id)
         model.commit_operation
       end
 
-      def prompt_edit_connection_type
+      def prompt_edit_edge_type
         model = Sketchup.active_model
-        types = get_connection_types(model)
+        types = get_edge_types(model)
 
-        input = prompt_pick_connection_type('Select Connection Type')
+        input = prompt_choose_edge_type('Select Edge Type')
         return unless input
 
         type_id = input[0]
@@ -435,23 +425,25 @@ module Examples
         color = type.color
         symmetrical = type.symmetrical
 
-        input = prompt_connection_type('Edit Connection Type',
+        input = prompt_edge_type_data('Edit Edge Type',
           id: type_id,
           symmetrical: symmetrical,
           color: color
         )
         return unless input
 
-        p [:prompt_edit_connection_type, input]
         type, symmetrical, color = input
 
         model = Sketchup.active_model
-        model.start_operation('Add Connection Type', true)
-        edit_connection_type(model, type_id, EdgePrototype.new(type, color, symmetrical))
+        model.start_operation('Add Edge Type', true)
+        edit_edge_type(model, type_id, EdgePrototype.new(type, color, symmetrical))
         rename_edge_ids(model, type_id, type) if type != type_id
         model.commit_operation
       end
 
+      # @param [Sketchup::Model] model
+      # @param [String] old_type_id
+      # @param [String] new_type_id
       def rename_edge_ids(model, old_type_id, new_type_id)
         @tiles.each { |tile|
           tile.edges.each { |edge|
@@ -462,33 +454,39 @@ module Examples
         }
       end
 
+      # @param [Sketchup::Model] model
+      # @param [String] type_id
       def remove_edge_ids(model, type_id)
+        assets = AssetManager.new(model)
         @tiles.each { |tile|
           tile.edges.each { |edge|
-            next unless edge.type == type_id
+            next unless edge.prototype&.type_id == type_id
 
-            edge.type = nil
+            edge.prototype = nil
+            assets.serialize_tile_edge(edge)
           }
         }
       end
 
-      def prompt_pick_connection_type(title)
+      # @param [String] title
+      def prompt_choose_edge_type(title)
         model = Sketchup.active_model
-        types = get_connection_types(model)
+        types = get_edge_types(model)
         type_ids = types.map(&:first)
 
-        prompts = ['Connection ID']
+        prompts = ['Edge Type ID']
         defaults = [type_ids.sort.first || '']
         list = [type_ids.sort.join('|')]
         UI.inputbox(prompts, defaults, list, title)
       end
 
-      def prompt_assign_connection_type(title)
+      # @param [String] title
+      def prompt_assign_edge_type(title)
         model = Sketchup.active_model
-        types = get_connection_types(model)
+        types = get_edge_types(model)
         type_ids = types.map(&:first)
 
-        prompts = ['Connection ID', 'Reversed']
+        prompts = ['Edge Type ID', 'Reversed']
         defaults = [type_ids.sort.first || '', 'false']
         boolean = 'true|false'
         list = [type_ids.sort.join('|'), boolean]
@@ -497,23 +495,25 @@ module Examples
         result
       end
 
-      def prompt_assign_connection_type_to_selection
+      def prompt_assign_edge_type_to_selection
         model = Sketchup.active_model
-        types = get_connection_types(model)
+        edge_types = get_edge_types(model)
 
-        input = prompt_assign_connection_type('Assign Connection Type')
+        input = prompt_assign_edge_type('Assign Edge Type')
         return unless input
 
         type_id, reversed = input
-        type = types.find { |t| t.type_id == type_id }
-        raise unless type
+        edge_type = edge_types.find { |e| e.type_id == type_id }
+        raise unless edge_type
 
+        assets = AssetManager.new(model)
+        model.start_operation('Assign Edge Type', true)
         @selection.each { |edge|
-          edge.assign(
-            type: type_id,
-            reversed: reversed,
-          )
+          edge.prototype = edge_type
+          edge.reversed = reversed
+          assets.serialize_tile_edge(edge)
         }
+        model.commit_operation
       end
 
       # @param [TilePrototype] prototype

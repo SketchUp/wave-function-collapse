@@ -57,14 +57,10 @@ module Examples
 
       # @param [Array<Possibility>] possibilities
       def remove_possibilities(possibilities)
-        # p [:possibilities, :before, @possibilities.size, entropy]
         possibilities.each { |possibility|
-          # raise 'already resolved' if resolved?
-          # @possibilities.delete(possibility)
           warn "#{self} unable to remove possibility" if @possibilities.delete(possibility).nil?
         }
         raise "#{self} failed to resolve after removing #{possibilities.size} possibilities" if failed?
-        # p [:possibilities, :after, @possibilities.size, entropy]
         update
       end
 
@@ -142,10 +138,10 @@ module Examples
           tr = Geom::Transformation.translation(instance.transformation.origin)
           instance.transformation = tr * possibility.transformation
 
+          # TODO: Refactor attributes to AssetManager.
           instance.set_attribute('tt_wfc', 'type', instance.definition.name)
           instance.set_attribute('tt_wfc', 'weight', possibility.weight)
         else
-          # p [:update]
           instance.material = world.material_from_entropy(entropy)
         end
       end

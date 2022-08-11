@@ -150,7 +150,6 @@ module Examples
         max = @possibilities.size
         ratio = entropy.to_f / max.to_f
         i = ((@materials.size - 1) * ratio).to_i
-        # p [:entropy, entropy, :max, max, :ratio, ratio, :i, i, @materials[i].name, @materials[i].color.to_a]
         @materials[i]
       end
 
@@ -325,11 +324,8 @@ module Examples
       def tick
         if break_at_iteration?
           if state.queue.empty?
-            # puts '-- empty queue'
             pause
           else
-            # puts "-- resume if paused (#{paused?}) [#{@timer}]"
-            # resume if paused?
             resume if @timer.nil?
           end
         end
@@ -359,6 +355,7 @@ module Examples
 
         instances = []
         group = model.entities.add_group
+          # TODO: Refactor attributes to AssetManager.
         group.set_attribute('tt_wfc', 'size', [width, height])
         group.set_attribute('tt_wfc', 'seed', seed.to_s) # Number can be too big!
         group.transform!(Geom::Vector3d.new(0, 0, 1.m))
@@ -407,6 +404,7 @@ module Examples
       # @return [Array<Sketchup::Material>]
       def generate_entropy_materials(max_entropy, steps = 10)
         model = Sketchup.active_model
+        # TODO: Refactor attributes to AssetManager.
         # Discard old materials.
         existing = model.materials.select { |material|
           material.get_attribute('tt_wfc', 'entropy', false)
