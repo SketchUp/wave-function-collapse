@@ -403,13 +403,13 @@ module Examples
             # tr = 0
             # --------------------
             # edges = [e, s, w, n]
-            # tr = -90
+            # tr = 90
             # --------------------
             # edges = [s, w, n, e]
-            # tr = -180
+            # tr = 180
             # --------------------
             # edges = [w, n, e, s]
-            # tr = -270
+            # tr = 270
             tr = Geom::Transformation.rotation(ORIGIN, Z_AXIS, 90.degrees * i)
             result << Possibility.new(prototype, edges.rotate(i), tr)
           }
