@@ -246,6 +246,10 @@ module Examples
         end
       end
 
+      def getExtents
+        Sketchup.active_model.bounds
+      end
+
       private
 
       SELECT_SINGLE = 0

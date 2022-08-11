@@ -246,7 +246,9 @@ module Examples
     # @return [String]
     def self.icon(basename)
       # https://www.svgrepo.com/
-      File.join(__dir__, 'icons', "#{basename}.svg")
+      dir = __dir__
+      dir.force_encoding('UTF-8')
+      File.join(dir, 'icons', "#{basename}.svg")
     end
 
     unless file_loaded?(__FILE__)

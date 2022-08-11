@@ -18,7 +18,7 @@ AllCops:
   - src/*/vendor/**/* # Exclude skippy vendor folder
   SketchUp:
     SourcePath: src
-    TargetSketchUpVersion: 2017
+    TargetSketchUpVersion: 2020
     Exclude: # Exclude common folders.
     - profiling/
     - skippy/
@@ -43,3 +43,8 @@ SketchupSuggestions:
 
 SketchupBugs:
   Enabled: true
+
+
+# This generator makes some assumptions about the model structure.
+SketchupSuggestions/ModelEntities:
+  Enabled: false
