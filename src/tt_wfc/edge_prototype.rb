@@ -4,7 +4,14 @@ module Examples
     EdgePrototype = Struct.new(:type_id, :color, :symmetrical)
     # @!parse
     #   class EdgePrototype
-    #     attr_accessor :type_id, :color, :symmetrical
+    #     # @return [String]
+    #     attr_accessor :type_id
+    #
+    #     # @return [String]
+    #     attr_accessor :color
+    #
+    #     # @return [Boolean]
+    #     attr_accessor :symmetrical
     #   end
 
   end

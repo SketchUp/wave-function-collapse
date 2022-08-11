@@ -24,6 +24,7 @@ module Examples
       return UI.beep if speed < 0
 
       Sketchup.write_default('TT_WFC', 'Speed', speed)
+      # TODO: Update active generator
     end
 
     def self.prompt_set_generator_seed
@@ -62,7 +63,13 @@ module Examples
       # Start the generation
       seed = Sketchup.read_default('TT_WFC', 'Seed', nil)
       seed = nil if seed < 1
-      @generator = WorldGenerator.new(width, height, prototypes, seed: seed)
+      @generator = WorldGenerator.new(width, height, prototypes,
+        seed: seed,
+        # Sketchup.write_default('TT_WFC', 'Speed', 0.01)
+        speed: Sketchup.read_default('TT_WFC', 'Speed', 0.1),
+        # Sketchup.write_default('TT_WFC', 'Log', true)
+        log: Sketchup.read_default('TT_WFC', 'Log', false),
+      )
 
       puts
       puts "Generator seed: #{@generator.seed}"
@@ -102,7 +109,11 @@ module Examples
       # Start the generation
       seed = Sketchup.read_default('TT_WFC', 'Seed', nil)
       seed = nil if seed < 1
-      @generator = WorldGenerator.new(width, height, prototypes, seed: seed)
+      @generator = WorldGenerator.new(width, height, prototypes,
+        seed: seed,
+        speed: Sketchup.read_default('TT_WFC', 'Speed', 0.1),
+        log: Sketchup.read_default('TT_WFC', 'Log', false),
+      )
 
       puts
       puts "Generator seed: #{@generator.seed}"
@@ -131,6 +142,7 @@ module Examples
 
     def self.toggle_break_at_iteration
       Sketchup.write_default('TT_WFC', 'BreakAtIteration', !self.break_at_iteration?)
+      @generator&.break_at_iteration = self.break_at_iteration?
     end
 
     def self.break_at_iteration?

@@ -40,25 +40,38 @@ module Examples
       # @return [Integer]
       attr_reader :seed
 
+      # @return [Float]
+      attr_reader :speed
+
+      # @overload break_at_iteration=(value)
+      # @param [Boolean] value
+      attr_writer :break_at_iteration
+
       # @param [Integer] width
       # @param [Integer] height
       # @param [Array<TilePrototype>] prototypes
       # @param [Integer] seed
-      def initialize(width, height, prototypes, seed: nil)
+      # @param [Float] speed
+      # @param [Boolean] start_paused
+      # @param [Boolean] break_at_iteration
+      # @param [Boolean] log
+      def initialize(width, height, prototypes,
+          seed: nil,
+          speed: 0.1,
+          break_at_iteration: false,
+          log: false
+        )
+        @log = log
         @seed = seed || Random.new_seed
         @random = Random.new(@seed)
         @width = width
         @height = height
+        @speed = speed # seconds
+        @break_at_iteration = break_at_iteration
         @possibilities = generate_possibilities(prototypes)
         @materials = generate_entropy_materials(@possibilities.size)
         @state = nil
         @timer = nil
-
-        # Sketchup.write_default('TT_WFC', 'Speed', 0.01)
-        @speed = Sketchup.read_default('TT_WFC', 'Speed', 0.1) # seconds
-
-        # Sketchup.write_default('TT_WFC', 'Log', true)
-        @log = Sketchup.read_default('TT_WFC', 'Log', false)
       end
 
       # @param [Boolean] start_paused
@@ -71,6 +84,10 @@ module Examples
         tiles = setup(model)
         @state = State.new(tiles, TileQueue.new, :running)
         start_paused ? pause : resume
+      end
+
+      def break_at_iteration?
+        @break_at_iteration
       end
 
       def stop
@@ -320,11 +337,6 @@ module Examples
         instances.map.with_index { |instance, i|
           Tile.new(self, instance, i)
         }
-      end
-
-      def break_at_iteration?
-        Sketchup.read_default('TT_WFC', 'StartPaused', false) &&
-          Sketchup.read_default('TT_WFC', 'BreakAtIteration', false)
       end
 
       def tick

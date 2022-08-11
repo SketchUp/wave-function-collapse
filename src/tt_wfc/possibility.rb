@@ -3,6 +3,7 @@ module Examples
 
     Possibility = Struct.new(:prototype, :edges, :transformation) do
 
+      # @return [Integer]
       def weight
         prototype.weight
       end
@@ -10,7 +11,14 @@ module Examples
     end
     # @!parse
     #   class Possibility
-    #     attr_accessor :prototype, :edges, :transformation
+    #     # @return [TilePrototype]
+    #     attr_accessor :prototype
+    #
+    #     # @return [Array<TileEdge>]
+    #     attr_accessor :edges
+    #
+    #     # @return [Geom::Transformation]
+    #     attr_accessor :transformation
     #   end
 
   end
