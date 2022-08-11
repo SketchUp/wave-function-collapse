@@ -394,8 +394,6 @@ module Examples
       toolbar.add_item(cmd_toggle_break_at_iteration)
       toolbar.add_item(cmd_speed)
       toolbar.add_separator
-      toolbar.add_item(cmd_seed)
-      toolbar.add_separator
       toolbar.add_item(cmd_tile_tool)
       toolbar.add_item(cmd_weight)
       toolbar.restore
