@@ -7,6 +7,21 @@ module Examples
 
     class WorldGenerator
 
+      STATUSES = [:running, :paused, :stopped]
+
+      State = Struct.new(:tiles, :queue, :status)
+      # @!parse
+      #   class State
+      #     # @return [Array<Tile>]
+      #     attr_accessor :tiles
+      #
+      #     # @return [TileQueue]
+      #     attr_accessor :queue
+      #
+      #     # @return [Symbol]
+      #     attr_accessor :status
+      #   end
+
       # @return [Integer]
       attr_reader :width, :height
 
@@ -27,15 +42,14 @@ module Examples
 
       # @param [Integer] width
       # @param [Integer] height
-      # @param [Array<TilePrototype>] prototype
+      # @param [Array<TilePrototype>] prototypes
       # @param [Integer] seed
-      def initialize(width, height, prototype, seed: nil)
+      def initialize(width, height, prototypes, seed: nil)
         @seed = seed || Random.new_seed
         @random = Random.new(@seed)
         @width = width
         @height = height
-        @prototype = prototype
-        @possibilities = generate_possibilities(prototype)
+        @possibilities = generate_possibilities(prototypes)
         @materials = generate_entropy_materials(@possibilities.size)
         @state = nil
         @timer = nil
@@ -61,26 +75,26 @@ module Examples
 
       def stop
         pause
-        @state.status = :stopped if @state
+        state.status = :stopped if state
         Sketchup.active_model.commit_operation
       end
 
       def running?
-        @state && @state.status == :running
+        state && state.status == :running
       end
 
       def stopped?
-        @state && @state.status == :stopped
+        state && state.status == :stopped
       end
 
       def paused?
-        @state && @state.status == :paused
+        state && state.status == :paused
       end
 
       def pause
         UI.stop_timer(@timer) if @timer
         @timer = nil
-        @state.status = :paused if @state
+        state.status = :paused if state
       end
 
       def resume
@@ -159,14 +173,6 @@ module Examples
       alias inspect to_s
 
       private
-
-      STATUSES = [:running, :paused, :stopped]
-
-      State = Struct.new(:tiles, :queue, :status)
-      # @!parse
-      #   class State
-      #     attr_accessor :tiles, :queue, :status
-      #   end
 
       # @param [Tile]
       def solve_tile(tile)
