@@ -73,16 +73,15 @@ module Examples
         @timer = nil
       end
 
-      # @param [Boolean] start_paused
       # @return [void]
-      def run(start_paused: false)
+      def run
         model = Sketchup.active_model
         # Not disabling UI because this will be a "long operation" that uses a
         # timer for the main loop.
         model.start_operation('Generate World') # rubocop:disable SketchupPerformance/OperationDisableUI
         tiles = setup(model)
         @state = State.new(tiles, TileQueue.new, :running)
-        start_paused ? pause : resume
+        break_at_iteration? ? pause : resume
       end
 
       def break_at_iteration?
@@ -112,7 +111,15 @@ module Examples
       def pause
         UI.stop_timer(@timer) if @timer
         @timer = nil
-        state.status = :paused if state
+        state&.status = :paused
+      end
+
+      # @param [Float] value
+      def speed=(value)
+        was_running = running?
+        pause if was_running
+        @speed = value
+        resume if was_running
       end
 
       # @return [void]
@@ -136,6 +143,7 @@ module Examples
           SKETCHUP_CONSOLE.show # TODO: Debug - remove after proper log control.
           puts "Elapsed time: #{elapsed.round(4)} seconds"
         end
+        state&.status = :running
       end
 
       # @return [void]

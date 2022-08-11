@@ -28,7 +28,7 @@ module Examples
       return UI.beep if speed < 0
 
       Sketchup.write_default('TT_WFC', 'Speed', speed)
-      # TODO: Update active generator
+      @generator&.speed = speed
     end
 
     # @return [void]
@@ -44,24 +44,43 @@ module Examples
       Sketchup.write_default('TT_WFC', 'Seed', seed)
     end
 
-    # @example Profiling
-    #   SpeedUp.profile { Examples::WFC.generate(10, 10) }
-    #
     # @return [void]
-    def self.prompt_generate
-      prompts = ["Width", "Height"]
-      defaults = [10, 10]
+    def self.prompt_generate_dialog
+      width = Sketchup.read_default('TT_WFC', 'Width', 10)
+      height = Sketchup.read_default('TT_WFC', 'Height', 10)
+      seed = Sketchup.read_default('TT_WFC', 'Seed', 0)
+
+      prompts = ["Width", "Height", "Seed (0 = Random)"]
+      defaults = [width, height, seed]
       input = UI.inputbox(prompts, defaults, "Generate World")
       return unless input
 
-      width, height = input
-      self.generate(width, height)
+      width, height, seed = input
+
+      Sketchup.write_default('TT_WFC', 'Width', width)
+      Sketchup.write_default('TT_WFC', 'Height', height)
+      Sketchup.write_default('TT_WFC', 'Seed', seed)
+
+      input
     end
 
+    # @return [void]
+    def self.prompt_generate
+      input = prompt_generate_dialog
+      return unless input
+
+      width, height, seed = input
+      self.generate(width, height, seed: seed)
+    end
+
+    # @example Profiling
+    #   SpeedUp.profile { Examples::WFC.generate(10, 10) }
+    #
     # @param [Integer] width
     # @param [Integer] height
+    # @param [Integer] seed
     # @return [void]
-    def self.generate(width, height)
+    def self.generate(width, height, seed: nil)
       model = Sketchup.active_model
       source = model.selection.empty? ? model.entities : model.selection
 
@@ -72,12 +91,16 @@ module Examples
 
       @generator&.stop
       # Start the generation
-      seed = Sketchup.read_default('TT_WFC', 'Seed', nil)
+      seed ||= Sketchup.read_default('TT_WFC', 'Seed', nil)
       seed = nil if seed < 1
       @generator = WorldGenerator.new(width, height, prototypes,
         seed: seed,
+
         # Sketchup.write_default('TT_WFC', 'Speed', 0.01)
         speed: Sketchup.read_default('TT_WFC', 'Speed', 0.1),
+
+        break_at_iteration: self.break_at_iteration?,
+
         # Sketchup.write_default('TT_WFC', 'Log', true)
         log: Sketchup.read_default('TT_WFC', 'Log', false),
       )
@@ -85,7 +108,7 @@ module Examples
       puts
       puts "Generator seed: #{@generator.seed}"
 
-      @generator.run(start_paused: self.start_paused?)
+      @generator.run
     end
 
     # @return [void]
@@ -108,29 +131,26 @@ module Examples
       }
       raise 'no tile prototypes loaded' if prototypes.empty?
 
-      # TODO: Deduplicate logic with normal generate
-      # TODO: Add seed as option
-      prompts = ["Width", "Height"]
-      defaults = [10, 10]
-      input = UI.inputbox(prompts, defaults, "Generate World")
+      input = prompt_generate_dialog
       return unless input
 
-      width, height = input
+      width, height, seed = input
 
       @generator&.stop
       # Start the generation
-      seed = Sketchup.read_default('TT_WFC', 'Seed', nil)
+      seed ||= Sketchup.read_default('TT_WFC', 'Seed', nil)
       seed = nil if seed < 1
       @generator = WorldGenerator.new(width, height, prototypes,
         seed: seed,
         speed: Sketchup.read_default('TT_WFC', 'Speed', 0.1),
+        break_at_iteration: self.break_at_iteration?,
         log: Sketchup.read_default('TT_WFC', 'Log', false),
       )
 
       puts
       puts "Generator seed: #{@generator.seed}"
 
-      @generator.run(start_paused: self.start_paused?)
+      @generator.run
     end
 
     # @return [void]
@@ -147,32 +167,13 @@ module Examples
     end
 
     # @return [void]
-    def self.toggle_start_paused
-      Sketchup.write_default('TT_WFC', 'StartPaused', !self.start_paused?)
-    end
-
-    def self.start_paused?
-      Sketchup.read_default('TT_WFC', 'StartPaused', false)
-    end
-
-    # @return [void]
     def self.toggle_break_at_iteration
       Sketchup.write_default('TT_WFC', 'BreakAtIteration', !self.break_at_iteration?)
       @generator&.break_at_iteration = self.break_at_iteration?
     end
 
     def self.break_at_iteration?
-      Sketchup.read_default('TT_WFC', 'BreakAtIteration', false)
-    end
-
-    # @return [void]
-    def self.decrease_current_generator_speed
-      @generator&.decrease_speed
-    end
-
-    # @return [void]
-    def self.increase_current_generator_speed
-      @generator&.increase_speed
+      Sketchup.read_default('TT_WFC', 'BreakAtIteration', true)
     end
 
     # @return [void]
@@ -309,39 +310,6 @@ module Examples
       cmd.large_icon = self.icon('stop')
       cmd_stop_generation = cmd
 
-      cmd = UI::Command.new('Increase Speed') {
-        self.increase_current_generator_speed
-      }
-      cmd.set_validation_proc  {
-        self.active_generator? ? MF_ENABLED : MF_DISABLED | MF_GRAYED
-      }
-      cmd.tooltip = cmd.menu_text
-      cmd.small_icon = self.icon('faster')
-      cmd.large_icon = self.icon('faster')
-      cmd_increase_speed = cmd
-
-      cmd = UI::Command.new('Decrease Speed') {
-        self.decrease_current_generator_speed
-      }
-      cmd.set_validation_proc  {
-        self.active_generator? ? MF_ENABLED : MF_DISABLED | MF_GRAYED
-      }
-      cmd.tooltip = cmd.menu_text
-      cmd.small_icon = self.icon('slower')
-      cmd.large_icon = self.icon('slower')
-      cmd_decrease_speed = cmd
-
-      cmd = UI::Command.new('Start Paused') {
-        self.toggle_start_paused
-      }
-      cmd.set_validation_proc  {
-        self.start_paused? ? MF_CHECKED : MF_ENABLED
-      }
-      cmd.tooltip = cmd.menu_text
-      cmd.small_icon = self.icon('halt')
-      cmd.large_icon = self.icon('halt')
-      cmd_toggle_start_paused = cmd
-
       cmd = UI::Command.new('Break at Iteration') {
         self.toggle_break_at_iteration
       }
@@ -349,13 +317,15 @@ module Examples
         self.break_at_iteration? ? MF_CHECKED : MF_ENABLED
       }
       cmd.tooltip = cmd.menu_text
+      cmd.small_icon = self.icon('halt')
+      cmd.large_icon = self.icon('halt')
       cmd_toggle_break_at_iteration = cmd
 
       cmd = UI::Command.new('Step') {
         self.advance_next_step
       }
       cmd.set_validation_proc  {
-        self.active_generator? ? MF_ENABLED : MF_DISABLED | MF_GRAYED
+        self.active_generator? && self.break_at_iteration? ? MF_ENABLED : MF_DISABLED | MF_GRAYED
       }
       cmd.tooltip = cmd.menu_text
       cmd.small_icon = self.icon('step')
@@ -386,7 +356,7 @@ module Examples
       cmd.large_icon = self.icon('speed')
       cmd_speed = cmd
 
-      cmd = UI::Command.new('Tile Tools') {
+      cmd = UI::Command.new('Tile Prototype Tool') {
         self.activate_tile_tool
       }
       cmd.tooltip = cmd.menu_text
@@ -402,13 +372,10 @@ module Examples
       menu.add_item(cmd_stop_generation)
       menu.add_separator
       menu.add_item(cmd_step)
-      menu.add_item(cmd_toggle_start_paused)
       menu.add_item(cmd_toggle_break_at_iteration)
       menu.add_item(cmd_speed)
+      menu.add_separator
       menu.add_item(cmd_seed)
-      # menu.add_separator
-      # menu.add_item(cmd_decrease_speed)
-      # menu.add_item(cmd_increase_speed)
       menu.add_separator
       menu.add_item(cmd_tile_tool)
       menu.add_item(cmd_weight)
@@ -424,15 +391,13 @@ module Examples
       toolbar.add_item(cmd_stop_generation)
       toolbar.add_separator
       toolbar.add_item(cmd_step)
-      toolbar.add_item(cmd_toggle_start_paused)
+      toolbar.add_item(cmd_toggle_break_at_iteration)
       toolbar.add_item(cmd_speed)
+      toolbar.add_separator
       toolbar.add_item(cmd_seed)
       toolbar.add_separator
       toolbar.add_item(cmd_tile_tool)
       toolbar.add_item(cmd_weight)
-      # toolbar.add_separator
-      # toolbar.add_item(cmd_decrease_speed)
-      # toolbar.add_item(cmd_increase_speed)
       toolbar.restore
 
       UI.add_context_menu_handler do |context_menu|
