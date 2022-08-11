@@ -10,7 +10,7 @@ module Examples
 
     module ToolConstants
 
-      # Constants for Tool.onCancel
+      # @!group Constants for Tool.onCancel
 
       REASON_ESC        = 0
       REASON_REACTIVATE = 1

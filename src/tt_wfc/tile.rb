@@ -6,16 +6,16 @@ module Examples
       # @return [WorldGenerator]
       attr_reader :world
 
-      # @return [Sketchup::ComponentInstance] instance
+      # @return [Sketchup::ComponentInstance]
       attr_reader :instance
 
-      # @return [Integer] index
+      # @return [Integer]
       attr_reader :index
 
-      # @return [Geom::Point3d] position
+      # @return [Geom::Point3d]
       attr_reader :position
 
-      # @return [Array<Possibility>] possibilities
+      # @return [Array<Possibility>]
       attr_reader :possibilities
 
       # @param [WorldGenerator] world
@@ -56,6 +56,7 @@ module Examples
       end
 
       # @param [Array<Possibility>] possibilities
+      # @return [void]
       def remove_possibilities(possibilities)
         possibilities.each { |possibility|
           warn "#{self} unable to remove possibility" if @possibilities.delete(possibility).nil?
@@ -65,6 +66,7 @@ module Examples
       end
 
       # @param [Possibility] possibility
+      # @return [void]
       def remove_possibility(possibility)
         raise 'already resolved' if resolved?
         if possibilities.delete(possibility)
@@ -73,6 +75,7 @@ module Examples
       end
 
       # @param [Possibility] possibility
+      # @return [void]
       def resolve_to(possibility)
         raise 'already resolved' if resolved?
         raise 'possibility not found' unless possibilities.select! { |item| item == possibility }
@@ -81,6 +84,7 @@ module Examples
       end
 
       # @param [Tile] tile
+      # @return [Integer]
       def edge_index_to_neighbor(tile)
         # :north, :east, :south, :west
         if tile.north_of?(self)
@@ -129,6 +133,7 @@ module Examples
 
       private
 
+      # @return [void]
       def update
         if resolved?
           puts "Resolved #{self}. (Instance: #{instance.persistent_id})" if Sketchup.read_default('TT_WFC', 'Log', false) # TODO: Kludge

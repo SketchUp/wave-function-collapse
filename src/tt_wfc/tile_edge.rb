@@ -10,7 +10,7 @@ module Examples
       # @return [TilePrototype]
       attr_reader :tile
 
-      # @return [Symbol] :north, :east, :south, :west
+      # @return [Symbol] `:north`, `:east`, `:south`, `:west`
       attr_reader :edge_id
 
       # @return [EdgePrototype, nil]
@@ -21,7 +21,6 @@ module Examples
 
       # @param [TilePrototype] tile
       # @param [Symbol] edge_id :north, :east, :south, :west
-      # @param [Geom::Point3d] position
       def initialize(tile, edge_id)
         @tile = tile
         @edge_id = edge_id

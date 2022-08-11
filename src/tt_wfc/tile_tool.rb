@@ -126,6 +126,7 @@ module Examples
       end
 
       # @param [Sketchup::View] view
+      # @return [void]
       def draw_symmetry_annotation(view, points, reversed, size)
         return if points.empty?
 
@@ -162,6 +163,7 @@ module Examples
 
       # @param [Sketchup::View] view
       # @param [Array<Tile>] tiles
+      # @return [void]
       def draw_weights(view, tiles)
         weighted = tiles.select { |tile| tile.weight > 1 }
         options = {
@@ -275,6 +277,7 @@ module Examples
       # @param [Integer] x
       # @param [Integer] y
       # @param [Sketchup::View] view
+      # @return [void]
       def select_edge(flags, x, y, view)
         picked = pick_edge(view, x, y)
         selection_type = selection_state(flags)
@@ -355,6 +358,7 @@ module Examples
 
       # @param [Sketchup::Model] model
       # @param [EdgePrototype] prototype
+      # @return [void]
       def add_edge_type(model, prototype)
         assets = AssetManager.new(model)
         assets.add_edge_prototype(prototype)
@@ -363,6 +367,7 @@ module Examples
       # @param [Sketchup::Model] model
       # @param [String] existing_type_id
       # @param [EdgePrototype] edge_type
+      # @return [void]
       def edit_edge_type(model, existing_type_id, edge_type)
         assets = AssetManager.new(model)
         assets.edit_edge_type(existing_type_id, edge_type)
@@ -370,6 +375,7 @@ module Examples
 
       # @param [Sketchup::Model] model
       # @param [String] existing_type_id
+      # @return [void]
       def delete_edge_type(model, existing_type_id)
         assets = AssetManager.new(model)
         assets.delete_edge_type(existing_type_id)
@@ -379,6 +385,7 @@ module Examples
       # @param [String] id
       # @param [Boolean] symmetrical
       # @param [String] color
+      # @return [void]
       def prompt_edge_type_data(title,
           id: 'edge-type-id',
           symmetrical: true,
@@ -392,6 +399,7 @@ module Examples
         result
       end
 
+      # @return [void]
       def prompt_add_edge_type
         input = prompt_edge_type_data('Create Edge Type')
         return unless input
@@ -404,6 +412,7 @@ module Examples
         model.commit_operation
       end
 
+      # @return [void]
       def prompt_remove_edge_type
         input = prompt_choose_edge_type('Remove Edge Type')
         return unless input
@@ -417,6 +426,7 @@ module Examples
         model.commit_operation
       end
 
+      # @return [void]
       def prompt_edit_edge_type
         model = Sketchup.active_model
         types = get_edge_types(model)
@@ -448,6 +458,7 @@ module Examples
       # @param [Sketchup::Model] model
       # @param [String] old_type_id
       # @param [String] new_type_id
+      # @return [void]
       def rename_edge_ids(model, old_type_id, new_type_id)
         @tiles.each { |tile|
           tile.edges.each { |edge|
@@ -460,6 +471,7 @@ module Examples
 
       # @param [Sketchup::Model] model
       # @param [String] type_id
+      # @return [void]
       def remove_edge_ids(model, type_id)
         assets = AssetManager.new(model)
         @tiles.each { |tile|
@@ -473,6 +485,7 @@ module Examples
       end
 
       # @param [String] title
+      # @return [void]
       def prompt_choose_edge_type(title)
         model = Sketchup.active_model
         types = get_edge_types(model)
@@ -485,6 +498,7 @@ module Examples
       end
 
       # @param [String] title
+      # @return [void]
       def prompt_assign_edge_type(title)
         model = Sketchup.active_model
         types = get_edge_types(model)
@@ -499,6 +513,7 @@ module Examples
         result
       end
 
+      # @return [void]
       def prompt_assign_edge_type_to_selection
         model = Sketchup.active_model
         edge_types = get_edge_types(model)
@@ -521,6 +536,7 @@ module Examples
       end
 
       # @param [TilePrototype] prototype
+      # @return [void]
       def prompt_assign_tile_weight(prototype)
         title = 'Assign Weight'
         prompts = ['Weight']

@@ -8,12 +8,13 @@ module Examples
     class AssetManager
 
       class Attr
+        # Root dictionary name.
         DICT = 'tt_wfc'
 
-        # TilePrototype
+        # @!group TilePrototype keys
         WEIGHT = 'weight'
 
-        # EdgePrototype
+        # @!group EdgePrototype keys
         CONNECTION_TYPES = 'connection_types' # Legacy
         EDGE_TYPES = CONNECTION_TYPES
         EDGE_TYPE = 'type'
@@ -28,7 +29,7 @@ module Examples
         @model = model
       end
 
-      # @param [#attribute_dictionary]
+      # @param [#attribute_dictionary] entity
       def has_wfc_data?(entity)
         !entity.attribute_dictionary(Attr::DICT, false).nil?
       end
@@ -40,7 +41,7 @@ module Examples
       end
 
       # @param [Enumerable] entities
-      # @param [Array<ComponentInstance>]
+      # @return [Array<Sketchup::ComponentInstance>]
       def tile_prototype_instances(entities)
         layer = tile_prototype_layer
         entities.grep(Sketchup::ComponentInstance).select { |instance|
@@ -148,6 +149,7 @@ module Examples
       # @note This doesn't update any existing tiles.
       #
       # @param [String] existing_type_id
+      # @return [void]
       def delete_edge_type(existing_type_id)
         edge_types = deserialize_edge_prototypes
         if edge_types.none? { |e| e.type_id == existing_type_id }
@@ -190,6 +192,7 @@ module Examples
       # @param [Sketchup::Entity] entity
       # @param [String] key
       # @param [Object] value
+      # @return [void]
       def set_attribute(entity, key, value)
         entity.set_attribute(Attr::DICT, key, value)
       end

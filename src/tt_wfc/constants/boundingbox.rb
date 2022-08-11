@@ -10,7 +10,7 @@ module Examples
 
     module BoundingBoxConstants
 
-      # Constants for Geom::BoundingBox.corner
+      # @!group Constants for Geom::BoundingBox.corner
 
       BB_LEFT_FRONT_BOTTOM  = 0
       BB_RIGHT_FRONT_BOTTOM = 1
@@ -22,7 +22,7 @@ module Examples
       BB_RIGHT_BACK_TOP     = 7
 
 
-      # Constants for BoundingBoxHelper.polygons
+      # @!group Constants for BoundingBoxHelper.polygons
 
       BB_POLYGON_FRONT  = 0
       BB_POLYGON_RIGHT  = 1

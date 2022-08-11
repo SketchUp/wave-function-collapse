@@ -52,7 +52,6 @@ module Examples
       # @param [Array<TilePrototype>] prototypes
       # @param [Integer] seed
       # @param [Float] speed
-      # @param [Boolean] start_paused
       # @param [Boolean] break_at_iteration
       # @param [Boolean] log
       def initialize(width, height, prototypes,
@@ -90,6 +89,7 @@ module Examples
         @break_at_iteration
       end
 
+      # @return [void]
       def stop
         pause
         state.status = :stopped if state
@@ -108,12 +108,14 @@ module Examples
         state && state.status == :paused
       end
 
+      # @return [void]
       def pause
         UI.stop_timer(@timer) if @timer
         @timer = nil
         state.status = :paused if state
       end
 
+      # @return [void]
       def resume
         raise 'generator is done' if stopped?
         raise 'already running' if @timer
@@ -136,6 +138,7 @@ module Examples
         end
       end
 
+      # @return [void]
       def update
         log { '' }
         log { 'Update...' }
@@ -191,7 +194,8 @@ module Examples
 
       private
 
-      # @param [Tile]
+      # @param [Tile] tile
+      # @return [void]
       def solve_tile(tile)
         # If a tile was resolved as a result of constraints it's neighbors needs
         # to be processed.
@@ -203,6 +207,8 @@ module Examples
         propagate(tile)
       end
 
+      # @param [Tile] tile
+      # @return [void]
       def propagate(tile)
         # Once a tile is resolved all it's neighbors needs to be evaluated.
         # If any of those change their neighbors also needs to be evaluated.
@@ -223,14 +229,14 @@ module Examples
       end
 
       # @param [Enumerable] enumerable
-      # @param [Object]
+      # @return [Object]
       def sample(enumerable)
         index = @random.rand(enumerable.size)
         enumerable[index]
       end
 
       # @param [Enumerable] enumerable
-      # @param [Object]
+      # @return [Object]
       def weighted_sample(enumerable)
         # https://github.com/robert/wavefunction-collapse/blob/21b2e5d95ec7db6057382bfb61ba4557cdd436f4/main.py#L258
         sum_weight = enumerable.sum(&:weight)
@@ -242,6 +248,7 @@ module Examples
       end
 
       # @param [Array<Tile>] tiles
+      # @return [Tile]
       def sample_by_least_entropy(tiles)
         unresolved = tiles.select(&:unresolved?)
         cache = unresolved.map { |tile|
@@ -260,6 +267,8 @@ module Examples
         sample(options.map(&:first))
       end
 
+      # @param [Enumerable] enumerable
+      # @return [Float]
       def shannon_entropy(enumerable)
         # https://robertheaton.com/2018/12/17/wavefunction-collapse-algorithm/
         # https://github.com/robert/wavefunction-collapse
@@ -277,8 +286,8 @@ module Examples
         sum_weight - (sum_times_log_weight / sum_weight)
       end
 
-      # @param [Tile]
-      # @param [Integer]
+      # @param [Tile] tile
+      # @return [Integer] number of possibilities constrained
       def constrain_possibilities(tile)
         constrained = 0
         constrainers = neighbors(tile).reject(&:untouched?)
@@ -300,11 +309,12 @@ module Examples
       end
 
       # @param [Array<Tile>] tiles
+      # @return [Array<Tile>]
       def sort_by_entropy(tiles)
         tiles.sort { |a, b| a.entropy <=> b.entropy }
       end
 
-      # @param [Tile]
+      # @param [Tile] tile
       # @return [Array<Tile>]
       def neighbors(tile)
         positions = [
@@ -339,6 +349,7 @@ module Examples
         }
       end
 
+      # @return [void]
       def tick
         if break_at_iteration?
           if state.queue.empty?
@@ -392,6 +403,7 @@ module Examples
       end
 
       # @param [Array<TilePrototype>] prototypes
+      # @return [Array<Possibility>]
       def generate_possibilities(prototypes)
         result = []
         prototypes.each { |prototype|
@@ -445,6 +457,7 @@ module Examples
         }
       end
 
+      # @return [void]
       def log
         puts yield if @log
       end

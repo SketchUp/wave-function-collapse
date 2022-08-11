@@ -10,7 +10,7 @@ module Examples
 
     module ViewConstants
 
-      # Constants for Sketchup::View.draw_points
+      # @!group Constants for Sketchup::View.draw_points
 
       DRAW_OPEN_SQUARE     = 1
       DRAW_FILLED_SQUARE   = 2
@@ -21,7 +21,7 @@ module Examples
       DRAW_FILLED_TRIANGLE = 7
 
 
-      # Constants for Sketchup::View.line_stipple
+      # @!group Constants for Sketchup::View.line_stipple
 
       STIPPLE_SOLID = ''.freeze
       STIPPLE_DOTTED = '.'.freeze

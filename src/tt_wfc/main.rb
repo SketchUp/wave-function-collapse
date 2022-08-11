@@ -7,11 +7,15 @@ require 'tt_wfc/world_generator'
 module Examples
   module WFC
 
-    # generator = Examples::WFC.generator
+    # @example
+    #   generator = Examples::WFC.generator
+    #
+    # @return [Generator, nil]
     def self.generator
       @generator
     end
 
+    # @return [void]
     def self.prompt_set_speed
       speed = Sketchup.read_default('TT_WFC', 'Speed', 0.1)
 
@@ -27,6 +31,7 @@ module Examples
       # TODO: Update active generator
     end
 
+    # @return [void]
     def self.prompt_set_generator_seed
       seed = Sketchup.read_default('TT_WFC', 'Seed', 0)
 
@@ -39,7 +44,10 @@ module Examples
       Sketchup.write_default('TT_WFC', 'Seed', seed)
     end
 
-    # SpeedUp.profile { Examples::WFC.generate(10, 10) }
+    # @example Profiling
+    #   SpeedUp.profile { Examples::WFC.generate(10, 10) }
+    #
+    # @return [void]
     def self.prompt_generate
       prompts = ["Width", "Height"]
       defaults = [10, 10]
@@ -50,6 +58,9 @@ module Examples
       self.generate(width, height)
     end
 
+    # @param [Integer] width
+    # @param [Integer] height
+    # @return [void]
     def self.generate(width, height)
       model = Sketchup.active_model
       source = model.selection.empty? ? model.entities : model.selection
@@ -77,6 +88,7 @@ module Examples
       @generator.run(start_paused: self.start_paused?)
     end
 
+    # @return [void]
     def self.prompt_derive
       model = Sketchup.active_model
       return unless model.selection.size == 1
@@ -121,17 +133,20 @@ module Examples
       @generator.run(start_paused: self.start_paused?)
     end
 
+    # @return [void]
     def self.stop_current_generator
       @generator&.stop
       @generator = nil
     end
 
+    # @return [void]
     def self.pause_current_generator
       return if @generator.nil?
 
       @generator.paused? ? @generator.resume : @generator.pause
     end
 
+    # @return [void]
     def self.toggle_start_paused
       Sketchup.write_default('TT_WFC', 'StartPaused', !self.start_paused?)
     end
@@ -140,6 +155,7 @@ module Examples
       Sketchup.read_default('TT_WFC', 'StartPaused', false)
     end
 
+    # @return [void]
     def self.toggle_break_at_iteration
       Sketchup.write_default('TT_WFC', 'BreakAtIteration', !self.break_at_iteration?)
       @generator&.break_at_iteration = self.break_at_iteration?
@@ -149,18 +165,22 @@ module Examples
       Sketchup.read_default('TT_WFC', 'BreakAtIteration', false)
     end
 
+    # @return [void]
     def self.decrease_current_generator_speed
       @generator&.decrease_speed
     end
 
+    # @return [void]
     def self.increase_current_generator_speed
       @generator&.increase_speed
     end
 
+    # @return [void]
     def self.advance_next_step
       @generator&.update
     end
 
+    # @return [void]
     def self.prompt_assign_weight
       model = Sketchup.active_model
       instances = model.selection.grep(Sketchup::ComponentInstance)
@@ -187,6 +207,7 @@ module Examples
       model.commit_operation
     end
 
+    # @return [void]
     def self.prompt_load_assets
       directory = UI.select_directory(
         title: "Select Asset Directory",
@@ -216,6 +237,7 @@ module Examples
       model.commit_operation
     end
 
+    # @return [void]
     def self.activate_tile_tool
       model = Sketchup.active_model
       return if model.nil?
@@ -228,6 +250,7 @@ module Examples
       @generator && !@generator.stopped?
     end
 
+    # @return [void]
     def self.context_menu(menu)
       model = Sketchup.active_model
       return unless model.selection.size == 1

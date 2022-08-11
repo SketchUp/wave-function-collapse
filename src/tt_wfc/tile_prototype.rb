@@ -5,7 +5,7 @@ module Examples
 
     class TilePrototype
 
-      # NOTE: It's important the order is clockwise.
+      # @note It's important the order is clockwise.
       EDGE_IDS = [
         :north, :east, :south, :west
       ]

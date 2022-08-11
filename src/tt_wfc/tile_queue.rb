@@ -7,7 +7,7 @@ module Examples
         @set = Set.new
       end
 
-      # @param [Object]
+      # @param [Object] value
       # @return [Boolean]
       def push(value)
         return false if @set.include?(value)
@@ -23,7 +23,7 @@ module Examples
         item
       end
 
-      # @param [Enumerable]
+      # @param [Enumerable] values
       def insert(values)
         values.each { |value| push(value) }
       end
