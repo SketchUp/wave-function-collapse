@@ -44,3 +44,39 @@ The set of tiles used can be narrowed by making a selection before starting the 
 As seen in the previous examples, the generated output is filled heavily with roads/rivers. In order to favour a given tile weights can be applied to adjust the distribution of the various tile types:
 
 ![](pages/images/generate-weights.gif)
+
+## Issues / Questions
+
+### Deriving a new world from existing world
+
+There is functionality that takes an already generated world as the base for the tile set for a new world. Additionally, the weights are derived from the frequency of the source world.
+
+Reference material:
+https://robertheaton.com/2018/12/17/wavefunction-collapse-algorithm/
+
+> When using our to analyze the input image, we also need to record the frequency at which each of its tiles appears. We will later use these numbers as weights when deciding which square’s wavefunction to collapse, and when choosing which tile to assign to a square when it is being collapsed.
+
+> The entropy formula used in Wavefunction Collapse is Shannon Entropy. It makes use of the tile weights that we parsed from the input image in the previous step:
+> ```
+> # Sums are over the weights of each remaining
+> # allowed tile type for the square whose
+> # entropy we are calculating.
+> shannon_entropy_for_square =
+>   log(sum(weight)) -
+>   (sum(weight * log(weight)) / sum(weight))
+> ```
+
+![](pages/images/derive-new-world.gif)
+
+Often the derived worlds are filled with many more roads/rivers than the source world. Haven't done the math on this, but it appear that the constraints of roads/rivers will often force more roads/rivers. The frequency of end tiles is much lower than for straight, corner and intersections - so that leads to higher frequency of roads/rivers.
+
+How can this be tuned to ensure the derived world's frequencies better match the source world?
+
+- Scale the frequency of the tiles in the new world relative to the source world as new tiles are resolved?
+  - https://www.gridbugs.org/wave-function-collapse/#relative-tile-frequencies ?
+- ???
+
+## Todo (maybe)
+
+- 3 dimensions
+- Train the algorithm what the connection rules are based on examples.
