@@ -17,7 +17,7 @@ module Examples
 
     # @return [void]
     def self.prompt_set_speed
-      speed = Sketchup.read_default('TT_WFC', 'Speed', 0.1)
+      speed = Sketchup.read_default('TT_WFC', 'Speed', 0.01)
 
       prompts = ["Speed (seconds)"]
       defaults = [speed]
@@ -97,7 +97,7 @@ module Examples
         seed: seed,
 
         # Sketchup.write_default('TT_WFC', 'Speed', 0.01)
-        speed: Sketchup.read_default('TT_WFC', 'Speed', 0.1),
+        speed: Sketchup.read_default('TT_WFC', 'Speed', 0.01),
 
         break_at_iteration: self.break_at_iteration?,
 
@@ -142,7 +142,7 @@ module Examples
       seed = nil if seed < 1
       @generator = WorldGenerator.new(width, height, prototypes,
         seed: seed,
-        speed: Sketchup.read_default('TT_WFC', 'Speed', 0.1),
+        speed: Sketchup.read_default('TT_WFC', 'Speed', 0.01),
         break_at_iteration: self.break_at_iteration?,
         log: Sketchup.read_default('TT_WFC', 'Log', false),
       )
@@ -173,7 +173,7 @@ module Examples
     end
 
     def self.break_at_iteration?
-      Sketchup.read_default('TT_WFC', 'BreakAtIteration', true)
+      Sketchup.read_default('TT_WFC', 'BreakAtIteration', false)
     end
 
     # @return [void]
